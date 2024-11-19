@@ -10,5 +10,5 @@ services:
       - TMDB_API_TOKEN=your_tmdb_token
     volumes:
       - ./input:/app/input
-      - ./output:/app/output
+      - ./config/rclone.conf:/app/rclone.conf
     command: ["-i", "/app/input", "--upload"]
