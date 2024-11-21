@@ -1,4 +1,4 @@
-# MiaubotUploader
+# Miaubot
 
 Este proyecto (semi) automatiza el renombrado y la organización de archivos multimedia, genera reportes de subida y sube archivos a servicios de almacenamiento en la nube utilizando Rclone.
 
