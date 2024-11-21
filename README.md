@@ -1,31 +1,36 @@
 # MiaubotUploader
 
-This project (semi) automates the renaming and organization of media files, generates upload reports, and uploads files to cloud storage using Rclone. 
+Este proyecto (semi) automatiza el renombrado y la organización de archivos multimedia, genera reportes de subida y sube archivos a servicios de almacenamiento en la nube utilizando Rclone.
 
-## Features
----
+## Ejemplo de uso
 
-## Requirements
-
-Before running the project, ensure you have the following prerequisites installed or configured:
-
-- **[Python 3.12 or higher](https://www.python.org/)**: The script is compatible with Python 3.12 and above, which is recommended for optimal performance and compatibility.
-- **A valid [TMDb API key](https://www.themoviedb.org/settings/api)**: Required to fetch posters for series and movies.
-
-### Optional Tools
-The following tools are optional but enhance the functionality of the project:
-
-- **[FileBot](https://www.filebot.net/)**: Use this tool if you want to automate the renaming and organization of media files into a structured format.
-- **[Rclone](https://rclone.org/)**: Use this tool if you want to upload your media files to cloud storage services
+```bash
+uv run main.py -i /ruta/a/Series --upload --rc-config ./rclone.conf --rc-args="--fast-list" --rc-remote myRemote --dry-run
+```
 
 ---
 
-## File Format Requirements
+## Requisitos
 
-For the script to work correctly, the input filenames must follow a specific format. Below are examples of input and output formats.
+Antes de ejecutar el proyecto, asegúrate de tener los siguientes requisitos instalados o configurados:
 
-### Input Examples
-Ensure filenames include basic information such as title, resolution, platform, and (for series) season/episode data:
+- **[Python 3.12 o superior](https://www.python.org/)**: El script es compatible con Python 3.12 o versiones más recientes, lo cual es recomendado para un mejor rendimiento y compatibilidad.
+- **Una clave válida de [TMDb API](https://www.themoviedb.org/settings/api)**: Necesaria para obtener los pósters de series y películas.
+
+### Herramientas opcionales
+Las siguientes herramientas son opcionales, pero mejoran la funcionalidad del proyecto:
+
+- **[FileBot](https://www.filebot.net/)**: Útil para automatizar el renombrado y la organización de archivos multimedia en un formato estructurado.
+- **[Rclone](https://rclone.org/)**: Útil para subir tus archivos multimedia a servicios de almacenamiento en la nube.
+
+---
+
+## Requisitos de formato de archivo
+
+Para que el script funcione correctamente, los nombres de los archivos de entrada deben seguir un formato específico. A continuación se muestran ejemplos de formatos de entrada y salida.
+
+### Ejemplos de entrada
+Asegúrate de que los nombres de archivo incluyan información básica como título, resolución, plataforma y (para series) datos de temporada/episodio:
 
 ```plaintext
 attack.on.titan.s01e01.1080p.cr.mkv
@@ -33,8 +38,8 @@ Attack.on.Titan.S01E02.1080p.dvd.mkv
 YOUR.NAME.2016.1080p.bd.mkv
 ```
 
-### Output Structure
-The script will organize and rename files into the following format:
+### Estructura de salida
+El script organizará y renombrará los archivos en el siguiente formato:
 
 ```plaintext
 Attack on Titan (2013)/
@@ -46,61 +51,62 @@ Your Name (2016) - [1080p] [BD] [tmdbid=12345].mkv
 
 ---
 
-## FileBot Preset
+## Preset de FileBot
 
-Use the following preset in FileBot to ensure your files are renamed correctly:
+Utiliza el siguiente preset en FileBot para asegurarte de que tus archivos sean renombrados correctamente:
 
 ```groovy
 {
-  // Convert the original filename to uppercase and search for the platform
+  // Convierte el nombre original a mayúsculas y busca la plataforma
   def platform = fn.toUpperCase().match(/(?:CR|AMZN|NF|ATVP|MAX|VIX|DSNP|AO|BD|DVD)/) ?: "PLATFORM";
 
-  // Use the TMDb ID if available
+  // Usa el TMDb ID si está disponible
   def tmdbId = any{"$tmdbid"}{"$id"};
 
-  // Extract resolution or use a default
+  // Extrae la resolución o utiliza un valor predeterminado
   def resolution = vf ?: "1080p";
 
   if (episode != null) {
-    // Series: Organize into seasons and rename
+    // Series: Organiza en temporadas y renombra
     return "${ny}/Season ${episode.season.pad(2)}/${ny} - S${episode.season.pad(2)}E${episode.episode.pad(2)} - [${resolution}] [${platform}] [tmdbid=${tmdbId}]${'.'+ext}";
   } else if (movie != null) {
-    // Movies: Rename into a structured format
+    // Películas: Renombra en un formato estructurado
     return "${ny} - [${resolution}] [${platform}] [tmdbid=${tmdbId}]${'.'+ext}";
   } else {
-    return fn; // Keep original filename if not recognized
+    return fn; // Mantén el nombre original si no se reconoce
   }
 }
 ```
 
 ---
 
-## Supported Platforms
+## Plataformas soportadas
 
-The script detects the following platforms automatically based on the filename:
+El script detecta automáticamente las siguientes plataformas basándose en el nombre del archivo:
 
-- **Streaming Services**: CR, AMZN, NF, ATVP, MAX, VIX, DSNP, AO
-- **Physical Media**: BD (Blu-ray), DVD
+- **Servicios de streaming**: CR, AMZN, NF, ATVP, MAX, VIX, DSNP, AO
+- **Medios físicos**: BD (Blu-ray), DVD
 
-If no platform is detected, the script will assign a default value of `PLATFORM`.
-
-
----
-## Troubleshooting
----
-
-## Contributing
-
-Feel free to submit issues or pull requests to improve this project. Contributions for supporting additional platforms or improving cloud integrations are welcome.
+Si no se detecta una plataforma, el script asignará un valor predeterminado de `PLATFORM`.
 
 ---
 
-## License
+## Resolución de problemas
 
-This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
+Si encuentras errores o problemas con el script, asegúrate de verificar:
+
+1. Que los nombres de archivo sigan el formato especificado.
+2. Que tengas configuradas las herramientas opcionales si deseas utilizar sus funciones avanzadas.
+3. Que los parámetros de entrada sean correctos.
 
 ---
 
-## Contact
+## Contribuciones
 
-If you have any questions or need assistance, please reach out at 
+Si deseas contribuir, puedes enviar problemas (issues) o solicitudes de incorporación de cambios (pull requests) para mejorar este proyecto. Se agradecen las contribuciones que añadan soporte para más plataformas o mejoren las integraciones con la nube.
+
+---
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](./LICENSE) para más detalles.

@@ -5,6 +5,7 @@ from pymediainfo import MediaInfo
 from dotenv import load_dotenv
 import argparse
 from collections import defaultdict
+import subprocess
 
 # Cargar variables de entorno
 load_dotenv(dotenv_path=".env.local")
@@ -18,6 +19,9 @@ TMDB_API_TOKEN = os.getenv("TMDB_API_TOKEN")
 parser = argparse.ArgumentParser(description="Procesa carpetas y archivos de video.")
 parser.add_argument("-i", "--input", required=True, help="Carpeta raíz a analizar")
 parser.add_argument("--upload", action="store_true", help="Subir archivos a la nube")
+parser.add_argument("--rc-config", required=False, default="rclone.conf", help="Ruta al archivo de configuración de rclone")
+parser.add_argument("--rc-args", required=False, default="", help="Argumentos adicionales para rclone (como string)")
+parser.add_argument("--rc-remote", required=True, help="Nombre del remoto configurado en rclone")
 parser.add_argument("--dry-run", action="store_true", help="Simula el envío sin realizar llamadas")
 args = parser.parse_args()
 
@@ -76,14 +80,13 @@ def get_media_info(file_path):
         "subtitles": ", ".join(subtitle_info),
     }
 
-def format_report(info, media_info, file_path, is_movie):
+def format_report(info, media_info, file_path, is_movie, remote_path):
     """Genera un reporte detallado para consola o Telegram."""
     title = info["title"]
     year = info["year"]
     resolution = info["resolution"]
     platform = info["platform"]
     season_episode = f"S{info['season']}E{info['episode']}" if not is_movie else ""
-    route = os.path.relpath(os.path.dirname(file_path), folder_path)  # Solo carpetas
 
     # Ajustar calidad
     quality_type = "WEB-DL" if platform.lower() not in ["dvd", "bd"] else ""
@@ -95,7 +98,7 @@ def format_report(info, media_info, file_path, is_movie):
         f"<b>Calidad:</b> {final_quality}\n"
         f"<b>Audio:</b> {media_info['audio']}\n"
         f"<b>Subtítulos:</b> {media_info['subtitles']}\n\n"
-        f"<b>Ruta:</b> <em>{route}</em>\n"
+        f"<b>Ruta:</b> <em>{remote_path}</em>\n"
     )
 
 def get_backdrop_url(tmdb_id, is_movie):
@@ -152,13 +155,52 @@ def process_directory(directory, dry_run=False):
 
                 is_movie = not info["season"]
                 media_info = get_media_info(file_path)
-                report = format_report(info, media_info, file_path, is_movie)
+
+                # Construir ruta remota
+                relative_path = os.path.relpath(root, directory)
+                remote_path = construct_remote_path(directory, relative_path)
+
+                if args.upload:
+                    upload_files(
+                        local_path=root,
+                        remote_name=args.rc_remote,
+                        remote_path=remote_path,
+                        config_path=args.rc_config,
+                        extra_args=args.rc_args,
+                        dry_run=dry_run
+                    )
+                report = format_report(info, media_info, file_path, is_movie, remote_path)
 
                 # Obtener backdrop URL
                 backdrop_url = get_backdrop_url(info["tmdb_id"], is_movie)
 
                 # Enviar reporte
                 send_report(TG_CHAT_ID, TG_BOT_TOKEN, report, is_movie, backdrop_url, dry_run)
+
+def construct_remote_path(base_path, relative_path):
+    """Construye la ruta remota basada en la carpeta de entrada."""
+    base_name = os.path.basename(base_path.rstrip("/"))
+    return os.path.join(base_name, relative_path).replace("\\", "/")
+
+def upload_files(local_path, remote_name, remote_path, config_path, extra_args, dry_run):
+    """Sube archivos a la nube usando rclone."""
+    # Convertir extra_args (string) en una lista de argumentos
+    extra_args_list = extra_args.split() if extra_args else []
+    
+    command = [
+        "rclone", "copy", local_path, f"{remote_name}:{remote_path}",
+        "-P", "--config", config_path
+    ] + extra_args_list
+
+    if dry_run:
+        print("Simulación de subida con el comando:")
+        print(" ".join(command))
+    else:
+        try:
+            subprocess.run(command, check=True)
+            print(f"Subida completada: {local_path} -> {remote_name}:{remote_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error al subir archivos: {e}")
 
 def main():
     """Procesa carpetas o archivos desde la ruta raíz."""
