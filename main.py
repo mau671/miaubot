@@ -80,7 +80,7 @@ def get_media_info(file_path):
         "subtitles": ", ".join(subtitle_info),
     }
 
-def format_report(info, media_info, file_path, is_movie, remote_path):
+def format_report(info, media_info, is_movie, remote_path):
     """Genera un reporte detallado para consola o Telegram."""
     title = info["title"]
     year = info["year"]
@@ -169,7 +169,7 @@ def process_directory(directory, dry_run=False):
                         extra_args=args.rc_args,
                         dry_run=dry_run
                     )
-                report = format_report(info, media_info, file_path, is_movie, remote_path)
+                report = format_report(info, media_info, is_movie, remote_path)
 
                 # Obtener backdrop URL
                 backdrop_url = get_backdrop_url(info["tmdb_id"], is_movie)
