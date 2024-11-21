@@ -14,7 +14,7 @@ uv run main.py -i /ruta/a/Series --upload --rc-config ./rclone.conf --rc-args="-
 
 Antes de ejecutar el proyecto, asegúrate de tener los siguientes requisitos instalados o configurados:
 
-- **[Python 3.12 o superior](https://www.python.org/)**: El script es compatible con Python 3.12 o versiones más recientes, lo cual es recomendado para un mejor rendimiento y compatibilidad.
+- **[Python 3.12 o superior](https://www.python.org/)**: El script es compatible con Python 3.12 o versiones más recientes.
 - **Una clave válida de [TMDb API](https://www.themoviedb.org/settings/api)**: Necesaria para obtener los pósters de series y películas.
 
 ### Herramientas opcionales

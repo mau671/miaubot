@@ -1,7 +1,11 @@
+version: "3.9"
+
 services:
   aportes:
-    image: ghcr.io/mau671/aportes:latest
-    container_name: aportes-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Miaubot
     environment:
       - UID=1000
       - GID=1000
@@ -11,4 +15,5 @@ services:
     volumes:
       - ./input:/app/input
       - ./config/rclone.conf:/app/rclone.conf
-    command: ["-i", "/app/input", "--upload"]
+    command: >
+      -i /app/input --upload --rc-config ./rclone.conf --rc-args="--fast-list" --rc-remote myRemote
