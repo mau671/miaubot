@@ -2,18 +2,10 @@ import os
 import re
 import requests
 from pymediainfo import MediaInfo
-from dotenv import load_dotenv
+from config import TG_BOT_TOKEN, TG_CHAT_ID, TMDB_API_TOKEN
 import argparse
 from typing import Optional, Dict, List
 import subprocess
-
-# Cargar variables de entorno
-load_dotenv(dotenv_path=".env.local")
-
-# Variables de entorno
-TG_BOT_TOKEN: str = os.getenv("TG_BOT_TOKEN", "")
-TG_CHAT_ID: int = int(os.getenv("TG_CHAT_ID", "0"))
-TMDB_API_TOKEN: str = os.getenv("TMDB_API_TOKEN", "")
 
 # Argumentos
 parser = argparse.ArgumentParser(description="Procesa carpetas y archivos de video.")
@@ -23,6 +15,10 @@ parser.add_argument("--rc-config", required=False, default="rclone.conf", help="
 parser.add_argument("--rc-args", required=False, default="", help="Argumentos adicionales para rclone (como string)")
 parser.add_argument("--rc-remote", required=True, help="Nombre del remoto configurado en rclone")
 parser.add_argument("--dry-run", action="store_true", help="Simula el envío sin realizar llamadas")
+
+# 
+parser.add_argument('--rc-upload-to', required=False, help='Nombre del remoto (con su path) configurado en rclone')
+parser.add_argument('--rc-upload-all', required=False, action='store_true', help='Subir todos los archivos encontrados')
 args = parser.parse_args()
 
 # Directorio de entrada
@@ -188,6 +184,7 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
     :param directory: Ruta de la carpeta a procesar
     :param dry_run: True para simular las operaciones sin ejecutarlas
     """
+    files_to_upload = []
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith((".mkv", ".mp4", ".avi")):
@@ -204,15 +201,18 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                 relative_path = os.path.relpath(root, directory)
                 remote_path = construct_remote_path(directory, relative_path)
 
-                if args.upload:
-                    upload_files(
+                if args.rc_upload_to:
+                    success = upload_files(
                         local_path=root,
-                        remote_name=args.rc_remote,
-                        remote_path=remote_path,
+                        remote_path=args.rc_upload_to,
                         config_path=args.rc_config,
                         extra_args=args.rc_args,
                         dry_run=dry_run
                     )
+                    if not success:
+                        print(f"Error al subir el archivo: {file}")
+                        continue
+
                 report = format_report(info, media_info, is_movie, remote_path)
 
                 # Obtener URL del backdrop
@@ -220,6 +220,21 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
 
                 # Enviar reporte a Telegram
                 send_report(TG_CHAT_ID, TG_BOT_TOKEN, report, is_movie, backdrop_url, dry_run)
+
+                # Agregar archivo a la lista de archivos a subir si se especifica subir todos
+                if args.rc_upload_all:
+                    files_to_upload.append(file_path)
+
+    # Si se especifica subir todos los archivos, se suben al finalizar el procesamiento de la carpeta
+    if args.rc_upload_all and files_to_upload:
+        extra_args_with_filter = f"{args.rc_args} --include {' '.join(files_to_upload)}"
+        upload_files(
+            local_path=directory,
+            remote_path=args.rc_upload_to,
+            config_path=args.rc_config,
+            extra_args=extra_args_with_filter,
+            dry_run=dry_run
+        )
 
 def construct_remote_path(base_path: str, relative_path: str) -> str:
     """
@@ -234,12 +249,11 @@ def construct_remote_path(base_path: str, relative_path: str) -> str:
 
 def upload_files(
     local_path: str, 
-    remote_name: str, 
-    remote_path: str, 
+    remote_path: str,
     config_path: str, 
     extra_args: str, 
     dry_run: bool
-) -> None:
+) -> bool:
     """
     Sube archivos a la nube usando rclone.
 
@@ -249,23 +263,31 @@ def upload_files(
     :param config_path: Ruta al archivo de configuración de rclone
     :param extra_args: Argumentos adicionales para rclone
     :param dry_run: True para simular la subida sin ejecutarla
+    :return: True si la subida fue exitosa, False en caso contrario
     """
     extra_args_list = extra_args.split() if extra_args else []
 
     command = [
-        "rclone", "copy", local_path, f"{remote_name}:{remote_path}",
+        "rclone", "copy", local_path, f"{remote_path}",
         "-P", "--config", config_path
     ] + extra_args_list
 
     if dry_run:
         print("Simulación de subida con el comando:")
         print(" ".join(command))
+        return True
     else:
         try:
-            subprocess.run(command, check=True)
-            print(f"Subida completada: {local_path} -> {remote_name}:{remote_path}")
+            result = subprocess.run(command, check=True)
+            if result.returncode == 0:
+                print(f"Subida completada: {local_path} -> {remote_path}")
+                return True
+            else:
+                print(f"Error al subir archivos: Código de retorno {result.returncode}")
+                return False
         except subprocess.CalledProcessError as e:
             print(f"Error al subir archivos: {e}")
+            return False
 
 def main() -> None:
     """
@@ -276,3 +298,6 @@ def main() -> None:
         return
 
     process_directory(folder_path, dry_run=args.dry_run)
+
+if __name__ == "__main__":
+    main()
