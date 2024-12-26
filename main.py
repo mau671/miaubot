@@ -4,16 +4,16 @@ import requests
 from pymediainfo import MediaInfo
 from dotenv import load_dotenv
 import argparse
-from collections import defaultdict
+from typing import Optional, Dict, List
 import subprocess
 
 # Cargar variables de entorno
 load_dotenv(dotenv_path=".env.local")
 
 # Variables de entorno
-TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
-TG_CHAT_ID = int(os.getenv("TG_CHAT_ID"))
-TMDB_API_TOKEN = os.getenv("TMDB_API_TOKEN")
+TG_BOT_TOKEN: str = os.getenv("TG_BOT_TOKEN", "")
+TG_CHAT_ID: int = int(os.getenv("TG_CHAT_ID", "0"))
+TMDB_API_TOKEN: str = os.getenv("TMDB_API_TOKEN", "")
 
 # Argumentos
 parser = argparse.ArgumentParser(description="Procesa carpetas y archivos de video.")
@@ -29,10 +29,15 @@ args = parser.parse_args()
 folder_path = args.input.rstrip("/") + "/"
 
 # Regex para nombrado
-FILE_PATTERN = r'^(.+?) \((\d{4})\) - S(\d{2})E(\d{2}) - \[(\d{3,4}p)\] \[([^\]]+)\] \[tmdbid=(\d+)\]\.(\w+)$'
+FILE_PATTERN: str = r'^(.+?) \((\d{4})\) - S(\d{2})E(\d{2}) - \[(\d{3,4}p)\] \[([^\]]+)\] \[tmdbid=(\d+)\]\.(\w+)$'
 
-def get_file_info(file_name):
-    """Extrae información del archivo usando una expresión regular."""
+def get_file_info(file_name: str) -> Optional[Dict[str, str]]:
+    """
+    Extrae información del archivo usando una expresión regular.
+    
+    :param file_name: Nombre del archivo
+    :return: Diccionario con la información extraída o None si no coincide
+    """
     match = re.match(FILE_PATTERN, file_name)
     if not match:
         return None
@@ -47,12 +52,17 @@ def get_file_info(file_name):
         "extension": match.group(8),
     }
 
-def get_media_info(file_path):
-    """Obtiene codec, audio, y subtítulos del archivo usando pymediainfo."""
+def get_media_info(file_path: str) -> Dict[str, str]:
+    """
+    Obtiene codec, audio y subtítulos del archivo usando pymediainfo.
+    
+    :param file_path: Ruta completa del archivo
+    :return: Diccionario con detalles de video, audio y subtítulos
+    """
     media_info = MediaInfo.parse(file_path)
-    video_info = []
-    audio_info = []
-    subtitle_info = []
+    video_info: List[str] = []
+    audio_info: List[str] = []
+    subtitle_info: List[str] = []
 
     for track in media_info.tracks:
         if track.track_type == "Video":
@@ -60,10 +70,10 @@ def get_media_info(file_path):
             quality = f"{track.height}p {codec}"
             video_info.append(quality)
         elif track.track_type == "Audio":
-            if track.channel_s:
-                channels = "5.1" if track.channel_s == "6" else f"{track.channel_s}.0"
-            else:
-                channels = "Stereo"
+            channels = (
+                "5.1" if track.channel_s == 6 else f"{track.channel_s}.0"
+                if track.channel_s else "Stereo"
+            )
             audio_format = track.other_format[0].split()[0] if track.other_format else "Unknown"
             audio_language = track.other_language[0] if track.other_language else "Unknown"
             audio_info.append(f"{audio_language} ({audio_format} {channels})")
@@ -80,31 +90,48 @@ def get_media_info(file_path):
         "subtitles": ", ".join(subtitle_info),
     }
 
-def format_report(info, media_info, is_movie, remote_path):
-    """Genera un reporte detallado para consola o Telegram."""
+def format_report(
+    info: Dict[str, str],
+    media_info: Dict[str, str],
+    is_movie: bool,
+    remote_path: str
+) -> str:
+    """
+    Genera un reporte detallado para consola o Telegram.
+    
+    :param info: Información del archivo
+    :param media_info: Detalles del archivo multimedia
+    :param is_movie: True si es película, False si es serie
+    :param remote_path: Ruta remota en la nube
+    :return: Reporte formateado como texto
+    """
     title = info["title"]
     year = info["year"]
     resolution = info["resolution"]
     platform = info["platform"]
     season_episode = f"S{info['season']}E{info['episode']}" if not is_movie else ""
 
-    # Ajustar calidad
     quality_type = "WEB-DL" if platform.lower() not in ["dvd", "bd"] else ""
-    video_details = media_info["video"].split(", ")[0]  # Solo el primer video track (por ejemplo, "1080p AVC")
+    video_details = media_info["video"].split(", ")[0] if media_info["video"] else "Desconocido"
     final_quality = f"{resolution} {platform} {quality_type} ({video_details.split(' ')[1]})".strip()
 
     return (
-        f"#miauporte <b>{title} ({year}) - agregado {season_episode or 'Película'}</b>\n\n"
+        f"#Reporte <b>{title} ({year}) - {season_episode or 'Película'}</b>\n\n"
         f"<b>Calidad:</b> {final_quality}\n"
         f"<b>Audio:</b> {media_info['audio']}\n"
         f"<b>Subtítulos:</b> {media_info['subtitles']}\n\n"
         f"<b>Ruta:</b> <em>{remote_path}</em>\n"
     )
 
-def get_backdrop_url(tmdb_id, is_movie):
-    """Obtiene la URL del backdrop desde TMDB usando el tmdb_id."""
-    tmdb_url = f"https://api.themoviedb.org/3/movie/{tmdb_id}" if is_movie else f"https://api.themoviedb.org/3/tv/{tmdb_id}"
+def get_backdrop_url(tmdb_id: str, is_movie: bool) -> Optional[str]:
+    """
+    Obtiene la URL del backdrop desde TMDB usando el tmdb_id.
     
+    :param tmdb_id: ID del TMDB
+    :param is_movie: True si es película, False si es serie
+    :return: URL del backdrop o None si no se encuentra
+    """
+    tmdb_url = f"https://api.themoviedb.org/3/movie/{tmdb_id}" if is_movie else f"https://api.themoviedb.org/3/tv/{tmdb_id}"
     tmdb_url += f"?api_key={TMDB_API_TOKEN}"
 
     response = requests.get(tmdb_url)
@@ -115,15 +142,30 @@ def get_backdrop_url(tmdb_id, is_movie):
             return f"https://image.tmdb.org/t/p/original{backdrop_path}"
     return None
 
-def send_report(chat_id, token, report, is_movie, backdrop_url, dry_run=False):
-    """Envía el reporte a Telegram como una foto con caption o muestra en consola en modo dry-run."""
+def send_report(
+    chat_id: int, 
+    token: str, 
+    report: str, 
+    is_movie: bool, 
+    backdrop_url: Optional[str], 
+    dry_run: bool = False
+) -> None:
+    """
+    Envía el reporte a Telegram como una foto con caption o muestra en consola en modo dry-run.
+    
+    :param chat_id: ID del chat de Telegram
+    :param token: Token del bot de Telegram
+    :param report: Reporte a enviar
+    :param is_movie: True si es película, False si es serie
+    :param backdrop_url: URL del backdrop
+    :param dry_run: True para simular el envío
+    """
     if dry_run:
         print("Simulación de envío:")
         print("Backdrop URL:", backdrop_url)
         print("Reporte:\n", report)
     else:
         if backdrop_url:
-            print("Enviando reporte a Telegram...")
             requests.post(
                 f"https://api.telegram.org/bot{token}/sendPhoto",
                 data={
@@ -131,20 +173,22 @@ def send_report(chat_id, token, report, is_movie, backdrop_url, dry_run=False):
                     "caption": report,
                     "parse_mode": "HTML",
                 },
-                files={
-                    "photo": requests.get(backdrop_url).content
-                }
+                files={"photo": requests.get(backdrop_url).content}
             )
         else:
-            print("No se encontró un backdrop. Enviando solo texto.")
             requests.post(
                 f"https://api.telegram.org/bot{token}/sendMessage",
                 data={"chat_id": chat_id, "text": report, "parse_mode": "HTML"},
             )
 
-def process_directory(directory, dry_run=False):
-    """Procesa una carpeta y sus subcarpetas."""
-    for root, dirs, files in os.walk(directory):
+def process_directory(directory: str, dry_run: bool = False) -> None:
+    """
+    Procesa una carpeta y sus subcarpetas para analizar archivos multimedia.
+
+    :param directory: Ruta de la carpeta a procesar
+    :param dry_run: True para simular las operaciones sin ejecutarlas
+    """
+    for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith((".mkv", ".mp4", ".avi")):
                 file_path = os.path.join(root, file)
@@ -153,7 +197,7 @@ def process_directory(directory, dry_run=False):
                     print(f"Archivo no válido: {file}")
                     continue
 
-                is_movie = not info["season"]
+                is_movie = not info["season"]  # Es película si no hay temporada
                 media_info = get_media_info(file_path)
 
                 # Construir ruta remota
@@ -171,22 +215,43 @@ def process_directory(directory, dry_run=False):
                     )
                 report = format_report(info, media_info, is_movie, remote_path)
 
-                # Obtener backdrop URL
+                # Obtener URL del backdrop
                 backdrop_url = get_backdrop_url(info["tmdb_id"], is_movie)
 
-                # Enviar reporte
+                # Enviar reporte a Telegram
                 send_report(TG_CHAT_ID, TG_BOT_TOKEN, report, is_movie, backdrop_url, dry_run)
 
-def construct_remote_path(base_path, relative_path):
-    """Construye la ruta remota basada en la carpeta de entrada."""
+def construct_remote_path(base_path: str, relative_path: str) -> str:
+    """
+    Construye la ruta remota basada en la carpeta de entrada.
+
+    :param base_path: Ruta base local
+    :param relative_path: Ruta relativa desde la base
+    :return: Ruta remota en formato adecuado
+    """
     base_name = os.path.basename(base_path.rstrip("/"))
     return os.path.join(base_name, relative_path).replace("\\", "/")
 
-def upload_files(local_path, remote_name, remote_path, config_path, extra_args, dry_run):
-    """Sube archivos a la nube usando rclone."""
-    # Convertir extra_args (string) en una lista de argumentos
+def upload_files(
+    local_path: str, 
+    remote_name: str, 
+    remote_path: str, 
+    config_path: str, 
+    extra_args: str, 
+    dry_run: bool
+) -> None:
+    """
+    Sube archivos a la nube usando rclone.
+
+    :param local_path: Ruta local de los archivos
+    :param remote_name: Nombre del remoto configurado en rclone
+    :param remote_path: Ruta remota donde subir los archivos
+    :param config_path: Ruta al archivo de configuración de rclone
+    :param extra_args: Argumentos adicionales para rclone
+    :param dry_run: True para simular la subida sin ejecutarla
+    """
     extra_args_list = extra_args.split() if extra_args else []
-    
+
     command = [
         "rclone", "copy", local_path, f"{remote_name}:{remote_path}",
         "-P", "--config", config_path
@@ -202,13 +267,12 @@ def upload_files(local_path, remote_name, remote_path, config_path, extra_args, 
         except subprocess.CalledProcessError as e:
             print(f"Error al subir archivos: {e}")
 
-def main():
-    """Procesa carpetas o archivos desde la ruta raíz."""
+def main() -> None:
+    """
+    Punto de entrada principal. Procesa la carpeta o archivo especificado en los argumentos.
+    """
     if not os.path.exists(folder_path):
         print(f"La carpeta {folder_path} no existe.")
         return
 
     process_directory(folder_path, dry_run=args.dry_run)
-
-if __name__ == "__main__":
-    main()
