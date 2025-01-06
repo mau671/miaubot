@@ -10,14 +10,11 @@ import subprocess
 # Argumentos
 parser = argparse.ArgumentParser(description="Procesa carpetas y archivos de video.")
 parser.add_argument("-i", "--input", required=True, help="Carpeta raíz a analizar")
-parser.add_argument("--upload", action="store_true", help="Subir archivos a la nube")
 parser.add_argument("--rc-config", required=False, default="rclone.conf", help="Ruta al archivo de configuración de rclone")
 parser.add_argument("--rc-args", required=False, default="", help="Argumentos adicionales para rclone (como string)")
 parser.add_argument("--rc-remote", required=True, help="Nombre del remoto configurado en rclone")
 parser.add_argument("--dry-run", action="store_true", help="Simula el envío sin realizar llamadas")
-
-# 
-parser.add_argument('--rc-upload-to', required=False, help='Nombre del remoto (con su path) configurado en rclone')
+parser.add_argument('--rc-upload-to', required=False, action='store_true', help='Nombre del remoto (con su path) configurado en rclone')
 parser.add_argument('--rc-upload-all', required=False, action='store_true', help='Subir todos los archivos encontrados')
 args = parser.parse_args()
 
