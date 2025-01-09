@@ -67,7 +67,9 @@ def get_backdrop_url(content_id: str, id_type: str, content_type: str) -> Option
                 tvdb_url = f"https://api4.thetvdb.com/v4/movies/{content_id}/extended"
             else:
                 # Use /artworks endpoint for series
-                tvdb_url = f"https://api4.thetvdb.com/v4/series/{content_id}/artworks?type=3"
+                tvdb_url = (
+                    f"https://api4.thetvdb.com/v4/series/{content_id}/artworks?type=3"
+                )
 
             headers = {"Authorization": f"Bearer {token}", "accept": "application/json"}
             response = requests.get(tvdb_url, headers=headers, timeout=10)
@@ -96,6 +98,7 @@ def get_backdrop_url(content_id: str, id_type: str, content_type: str) -> Option
         print(f"Error fetching data for {id_type}: {e}")
     return None
 
+
 def get_tvdb_token(api_key: str) -> Optional[str]:
     """
     Fetches the Bearer token from TheTVDB API using the provided API key.
@@ -107,20 +110,16 @@ def get_tvdb_token(api_key: str) -> Optional[str]:
         # Define the API endpoint and payload
         url = "https://api4.thetvdb.com/v4/login"
         payload = {"apikey": api_key}
-        headers = {
-            "accept": "application/json",
-            "Content-Type": "application/json"
-        }
+        headers = {"accept": "application/json", "Content-Type": "application/json"}
         # Make the POST request
         response = requests.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
-        
+
         # Extract the token from the response
         return response.json().get("data", {}).get("token")
     except requests.RequestException as e:
         print(f"Error obtaining TVDB token: {e}")
     return None
-
 
 
 def send_report(

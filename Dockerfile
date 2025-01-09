@@ -19,4 +19,4 @@ RUN uv sync --frozen
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Usar ENTRYPOINT para manejar correctamente los argumentos
-ENTRYPOINT ["uv", "run", "main.py"]
+ENTRYPOINT ["uv", "run", "--module", "src.main"]

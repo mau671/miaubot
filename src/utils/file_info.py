@@ -4,10 +4,10 @@ from typing import Optional, Dict
 # Regular expression pattern to match series and movie file names.
 # "SxxExx" (season and episode) is optional to allow matching movie file names as well.
 FILE_PATTERN = (
-    r"^(.+?) \((\d{4})\)"                # Title and year
-    r"(?: - S(\d{2})E(\d{2}))?"          # Season and episode (optional for movies)
-    r" - \[(\d{3,4}p)\] \[([^\]]+)\]"    # Resolution and platform
-    r" \[(tmdbid|tvdbid)=(\d+)\]\.(\w+)$" # ID type, ID value, and file extension
+    r"^(.+?) \((\d{4})\)"  # Title and year
+    r"(?: - S(\d{2})E(\d{2}))?"  # Season and episode (optional for movies)
+    r" - \[(\d{3,4}p)\] \[([^\]]+)\]"  # Resolution and platform
+    r" \[(tmdbid|tvdbid)=(\d+)\]\.(\w+)$"  # ID type, ID value, and file extension
 )
 
 
@@ -56,7 +56,7 @@ def get_file_info(file_name: str) -> Optional[Dict[str, Optional[str]]]:
         "resolution": match.group(5),
         "platform": match.group(6),
         "id_type": match.group(7),  # Either "tmdbid" or "tvdbid"
-        "id": match.group(8),       # The numeric ID value
+        "id": match.group(8),  # The numeric ID value
         "extension": match.group(9),
-        "type": "series" if is_series else "movie"
+        "type": "series" if is_series else "movie",
     }

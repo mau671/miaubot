@@ -3,7 +3,7 @@ from src.config import TG_BOT_TOKEN, TG_CHAT_ID
 from src.args import parse_arguments
 from src.utils.file_info import get_file_info
 from src.utils.media_info import get_media_info
-from src.utils.rclone import upload_files, construct_remote_path
+from src.utils.rclone import upload_files
 from src.utils.report import send_report, get_backdrop_url, format_report
 import shlex
 import tempfile
@@ -64,12 +64,12 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                 report = format_report(info, media_info, remote_path)
 
                 # Get backdrop URL
-                backdrop_url = get_backdrop_url(info["id"], info["id_type"], info["type"])
+                backdrop_url = get_backdrop_url(
+                    info["id"], info["id_type"], info["type"]
+                )
 
                 # Send report to Telegram
-                send_report(
-                    TG_CHAT_ID, TG_BOT_TOKEN, report, backdrop_url, dry_run
-                )
+                send_report(TG_CHAT_ID, TG_BOT_TOKEN, report, backdrop_url, dry_run)
 
                 # Add file to the list of files to upload if upload all is specified
                 if args.rc_upload_all:
@@ -79,7 +79,8 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
     if args.rc_upload_all and files_to_upload:
         # Get relative paths of the files to upload
         relative_files_to_upload = [
-            os.path.relpath(file, start=directory).lstrip("./") for file in files_to_upload
+            os.path.relpath(file, start=directory).lstrip("./")
+            for file in files_to_upload
         ]
 
         # Write the list of files to a temporary file
