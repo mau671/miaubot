@@ -56,26 +56,28 @@ Your Name (2016) - [1080p] [BD] [tmdbid=12345].mkv
 Utiliza el siguiente preset en FileBot para asegurarte de que tus archivos sean renombrados correctamente:
 
 ```groovy
+```groovy
 {
-  // Convierte el nombre original a mayúsculas y busca la plataforma
+  // Convierte el nombre de archivo original a mayúsculas y busca la plataforma
   def platform = fn.toUpperCase().match(/(?:CR|AMZN|NF|ATVP|MAX|VIX|DSNP|AO|BD|DVD)/) ?: "PLATFORM";
 
-  // Usa el TMDb ID si está disponible
-  def tmdbId = any{"$tmdbid"}{"$id"};
+  // Construye el identificador con prioridad para TMDb ID, como alternativa usa TVDb ID
+  def idTag = any { '[tmdbid=' + tmdbid + ']' } { '[tvdbid=' + tvdbid + ']' } { '[id=' + id + ']' };
 
-  // Extrae la resolución o utiliza un valor predeterminado
+  // Extrae la resolución o usa un valor predeterminado
   def resolution = vf ?: "1080p";
 
   if (episode != null) {
     // Series: Organiza en temporadas y renombra
-    return "${ny}/Season ${episode.season.pad(2)}/${ny} - S${episode.season.pad(2)}E${episode.episode.pad(2)} - [${resolution}] [${platform}] [tmdbid=${tmdbId}]${'.'+ext}";
+    return "${ny}/Season ${episode.season.pad(2)}/${ny} - S${episode.season.pad(2)}E${episode.episode.pad(2)} - [${resolution}] [${platform}] ${idTag}";
   } else if (movie != null) {
     // Películas: Renombra en un formato estructurado
-    return "${ny} - [${resolution}] [${platform}] [tmdbid=${tmdbId}]${'.'+ext}";
+    return "${ny} - [${resolution}] [${platform}] ${idTag}";
   } else {
-    return fn; // Mantén el nombre original si no se reconoce
+    return fn; // Mantén el nombre de archivo original si no se reconoce
   }
 }
+```
 ```
 
 ---
