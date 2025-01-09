@@ -56,7 +56,6 @@ Your Name (2016) - [1080p] [BD] [tmdbid=12345].mkv
 Utiliza el siguiente preset en FileBot para asegurarte de que tus archivos sean renombrados correctamente:
 
 ```groovy
-```groovy
 {
   // Convierte el nombre de archivo original a mayúsculas y busca la plataforma
   def platform = fn.toUpperCase().match(/(?:CR|AMZN|NF|ATVP|MAX|VIX|DSNP|AO|BD|DVD)/) ?: "PLATFORM";
@@ -77,7 +76,6 @@ Utiliza el siguiente preset en FileBot para asegurarte de que tus archivos sean 
     return fn; // Mantén el nombre de archivo original si no se reconoce
   }
 }
-```
 ```
 
 ---
