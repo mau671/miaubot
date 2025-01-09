@@ -30,7 +30,6 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
 
                 print(f"Processing file: {file}")
 
-                is_movie = not info["season"]  # It is a movie if there is no season
                 media_info = get_media_info(file_path)
 
                 # Build remote path
@@ -49,14 +48,14 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                         print(f"Error uploading file: {file}")
                         continue
 
-                report = format_report(info, media_info, is_movie, remote_path)
+                report = format_report(info, media_info, remote_path)
 
                 # Get backdrop URL
-                backdrop_url = get_backdrop_url(info["tmdb_id"], is_movie)
+                backdrop_url = get_backdrop_url(info["id"], info["id_type"], info["type"])
 
                 # Send report to Telegram
                 send_report(
-                    TG_CHAT_ID, TG_BOT_TOKEN, report, is_movie, backdrop_url, dry_run
+                    TG_CHAT_ID, TG_BOT_TOKEN, report, backdrop_url, dry_run
                 )
 
                 # Add file to the list of files to upload if upload all is specified
