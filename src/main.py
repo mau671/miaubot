@@ -32,13 +32,25 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
 
                 media_info = get_media_info(file_path)
 
-                # Build remote path
-                relative_path = os.path.relpath(root, directory)
-                remote_path = construct_remote_path(args.rc_upload_to, relative_path)
+                # Handle root-relative paths correctly
+                relative_path = os.path.relpath(file_path, directory)
+                if relative_path.startswith("./"):
+                    relative_path = relative_path[2:]  # Remove './' if present
 
+                if info["type"] == "movie":
+                    remote_path = os.path.join(args.rc_upload_to, relative_path)
+                    local_path = file_path
+                else:
+                    # Series: Use full path for remote_path
+                    remote_path = os.path.join(
+                        args.rc_upload_to, os.path.relpath(file_path, directory)
+                    )
+                    local_path = file_path
+
+                # Upload files
                 if args.rc_upload_to:
                     success = upload_files(
-                        local_path=root,
+                        local_path=local_path,
                         remote_path=remote_path,
                         config_path=args.rc_config,
                         extra_args=args.rc_args,
@@ -48,6 +60,7 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                         print(f"Error uploading file: {file}")
                         continue
 
+                # Generate report
                 report = format_report(info, media_info, remote_path)
 
                 # Get backdrop URL
@@ -66,7 +79,7 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
     if args.rc_upload_all and files_to_upload:
         # Get relative paths of the files to upload
         relative_files_to_upload = [
-            os.path.relpath(file, start=directory) for file in files_to_upload
+            os.path.relpath(file, start=directory).lstrip("./") for file in files_to_upload
         ]
 
         # Write the list of files to a temporary file
