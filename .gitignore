@@ -6,15 +6,15 @@ __pycache__/
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
 
 # Virtual environments
 .venv/
-.env.local
 
 # Input and output directories
 input/
 output/
+data/
 
 # Testing
 tests/
@@ -22,3 +22,9 @@ tests/
 
 # Linter cache
 .ruff_cache/
+
+# Rclone config
+rclone.conf
+
+# Environment variables
+.env

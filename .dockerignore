@@ -1,11 +1,30 @@
-# Python-generated files
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[oc]
+*.py[cod]
+
+# Distribution / packaging
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
 
 # Virtual environments
-.venv
-.env.local
+.venv/
+
+# Input and output directories
+input/
+output/
+data/
+
+# Testing
+tests/
+.pytest_cache/
+
+# Linter cache
+.ruff_cache/
+
+# Rclone config
+rclone.conf
+
+# Environment variables
+.env
