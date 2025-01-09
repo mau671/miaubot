@@ -11,6 +11,21 @@ import tempfile
 args = parse_arguments()
 
 
+def parse_upload_target(target: str):
+    """
+    Parses the upload target to extract the operation and the remote path.
+
+    :param target: The upload target string in the format "operation,destination"
+    :return: A tuple (operation, destination)
+    """
+    parts = target.split(",", 1)
+    if len(parts) == 2:
+        return parts[0].strip(), parts[1].strip()
+    else:
+        # Default to 'copy' if operation is not specified
+        return "copy", parts[0].strip()
+
+
 def process_directory(directory: str, dry_run: bool = False) -> None:
     """
     Processes a folder and its subfolders to analyze multimedia files.
@@ -19,6 +34,15 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
     :param dry_run: True to simulate the operations without executing them
     """
     files_to_upload = []
+
+    # Parse --rc-upload-to
+    upload_to_operation, upload_to_remote = parse_upload_target(args.rc_upload_to)
+
+    # Parse --rc-upload-all (if specified)
+    upload_all_operation, upload_all_remote = (
+        parse_upload_target(args.rc_upload_all) if args.rc_upload_all else (None, None)
+    )
+
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith((".mkv", ".mp4", ".avi")):
@@ -37,28 +61,21 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                 if relative_path.startswith("./"):
                     relative_path = relative_path[2:]  # Remove './' if present
 
-                if info["type"] == "movie":
-                    remote_path = os.path.join(args.rc_upload_to, relative_path)
-                    local_path = file_path
-                else:
-                    # Series: Use full path for remote_path
-                    remote_path = os.path.join(
-                        args.rc_upload_to, os.path.relpath(file_path, directory)
-                    )
-                    local_path = file_path
+                remote_path = os.path.join(upload_to_remote, relative_path)
+                local_path = file_path
 
                 # Upload files
-                if args.rc_upload_to:
-                    success = upload_files(
-                        local_path=local_path,
-                        remote_path=remote_path,
-                        config_path=args.rc_config,
-                        extra_args=args.rc_args,
-                        dry_run=dry_run,
-                    )
-                    if not success:
-                        print(f"Error uploading file: {file}")
-                        continue
+                success = upload_files(
+                    local_path=local_path,
+                    remote_path=remote_path,
+                    config_path=args.rc_config,
+                    extra_args=args.rc_args,
+                    dry_run=dry_run,
+                    operation=upload_to_operation,
+                )
+                if not success:
+                    print(f"Error uploading file: {file}")
+                    continue
 
                 # Generate report
                 report = format_report(info, media_info, remote_path)
@@ -76,14 +93,12 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                     files_to_upload.append(file_path)
 
     # If upload all files is specified, upload them after processing the folder
-    if args.rc_upload_all and files_to_upload:
-        # Get relative paths of the files to upload
+    if upload_all_remote and files_to_upload:
         relative_files_to_upload = [
             os.path.relpath(file, start=directory).lstrip("./")
             for file in files_to_upload
         ]
 
-        # Write the list of files to a temporary file
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
             files_from_path = temp_file.name
             for file in relative_files_to_upload:
@@ -96,13 +111,13 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
             )
             upload_files(
                 local_path=directory,
-                remote_path=args.rc_upload_all,
+                remote_path=upload_all_remote,
                 config_path=args.rc_config,
                 extra_args=extra_args_with_filter,
                 dry_run=dry_run,
+                operation=upload_all_operation,
             )
         finally:
-            # Ensure the temporary file is removed after use
             os.remove(files_from_path)
 
 
@@ -110,8 +125,6 @@ def main() -> None:
     """
     Main entry point. Processes the folder or file specified in the arguments.
     """
-
-    # Input directory
     folder_path = args.input.rstrip("/") + "/"
     if not os.path.exists(folder_path):
         print(f"Error: The folder '{folder_path}' does not exist.")

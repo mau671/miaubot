@@ -33,10 +33,10 @@ def format_report(
 
     return (
         f"#miauporte <b>{title} ({year}){ f"- {season_episode}" if content_type == "series" else ""}</b>\n\n"
-        f"<b>Quality:</b> {final_quality}\n"
+        f"<b>Calidad:</b> {final_quality}\n"
         f"<b>Audio:</b> {media_info['audio']}\n"
-        f"<b>Subtitles:</b> {media_info['subtitles']}\n\n"
-        f"<b>Path:</b> <em>{remote_path.split(':', 1)[-1]}</em>\n"
+        f"<b>Subtítulos:</b> {media_info['subtitles']}\n\n"
+        f"<b>Ruta:</b> <em>{remote_path.split(':', 1)[-1]}</em>\n"
     )
 
 

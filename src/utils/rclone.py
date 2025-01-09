@@ -16,7 +16,12 @@ def construct_remote_path(base_remote: str, relative_path: str) -> str:
 
 
 def upload_files(
-    local_path: str, remote_path: str, config_path: str, extra_args: str, dry_run: bool
+    local_path: str,
+    remote_path: str,
+    config_path: str,
+    extra_args: str,
+    dry_run: bool,
+    operation: str,
 ) -> bool:
     """
     Uploads files to the cloud using rclone.
@@ -26,12 +31,17 @@ def upload_files(
     :param config_path: Path to the rclone configuration file
     :param extra_args: Additional arguments for rclone
     :param dry_run: True to simulate the upload without executing it
+    :param operation: The rclone operation to perform (e.g., 'copy', 'copyto', 'move', 'moveto')
     :return: True if the upload was successful, False otherwise
     """
 
+    if operation not in ["copy", "copyto", "move", "moveto"]:
+        print(f"Invalid operation: {operation}")
+        return False
+
     command = [
         "rclone",
-        "copy",
+        operation,
         local_path,
         remote_path,
         "-P",
@@ -42,7 +52,7 @@ def upload_files(
     if extra_args:
         command.extend(extra_args.split())
 
-    print(f"Uploading files: {local_path} -> {remote_path}")
+    print(f"Uploading files: {local_path} -> {remote_path} with operation {operation}")
 
     if dry_run:
         print("Upload simulation with the command:")
