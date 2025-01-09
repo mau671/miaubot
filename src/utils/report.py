@@ -32,7 +32,7 @@ def format_report(
     final_quality = f"{resolution} {platform} {quality_type} ({video_details.split(' ')[1]})".strip()
 
     return (
-        f"#miauporte <b>{title} ({year}){ f"- {season_episode}" if content_type == "series" else ""}</b>\n\n"
+        f"#miauporte <b>{title} ({year}){ f" - {season_episode}" if content_type == "series" else ""}</b>\n\n"
         f"<b>Calidad:</b> {final_quality}\n"
         f"<b>Audio:</b> {media_info['audio']}\n"
         f"<b>Subtítulos:</b> {media_info['subtitles']}\n\n"
