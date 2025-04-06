@@ -25,11 +25,21 @@ def format_report(
         f"S{info['season']}E{info['episode']}" if content_type == "series" else "Movie"
     )
 
-    quality_type = "WEB-DL" if platform.lower() not in ["dvd", "bd", "encode"] else platform
+    # Determine quality type based on platform
+    if platform.lower() in ["dvd", "bd", "encode"]:
+        quality_type = platform
+    else:
+        quality_type = "WEB-DL"
+        
     video_details = (
         media_info["video"].split(", ")[0] if media_info["video"] else "Unknown"
     )
-    final_quality = f"{resolution} {platform} {quality_type} ({video_details.split(' ')[1]})".strip()
+    
+    # Include platform only in final_quality if it's not already part of quality_type
+    if platform.lower() == quality_type.lower():
+        final_quality = f"{resolution} {quality_type} ({video_details.split(' ')[1]})".strip()
+    else:
+        final_quality = f"{resolution} {platform} {quality_type} ({video_details.split(' ')[1]})".strip()
 
     return (
         f"#miauporte <b>{title} ({year}){ f" - {season_episode}" if content_type == "series" else ""}</b>\n\n"
