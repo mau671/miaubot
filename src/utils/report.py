@@ -25,7 +25,7 @@ def format_report(
         f"S{info['season']}E{info['episode']}" if content_type == "series" else "Movie"
     )
 
-    quality_type = "WEB-DL" if platform.lower() not in ["dvd", "bd"] else platform
+    quality_type = "WEB-DL" if platform.lower() not in ["dvd", "bd", "encode"] else platform
     video_details = (
         media_info["video"].split(", ")[0] if media_info["video"] else "Unknown"
     )
