@@ -23,3 +23,6 @@ build-backend = "hatchling.build"
 source = "regex"
 path = "VERSION"
 pattern = "^(?P<version>.+)$"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
