@@ -132,21 +132,30 @@ jobs:
           --output dist/ \
           .
         
-        # Find and rename the executable
-        EXECUTABLE_FILE=$(find dist/ -name "miaubot-linux-*" -type f | head -1)
-        if [ -n "$EXECUTABLE_FILE" ] && [ -f "$EXECUTABLE_FILE" ]; then
-          mv "$EXECUTABLE_FILE" "dist/miaubot-${{ matrix.platform }}"
-          chmod +x "dist/miaubot-${{ matrix.platform }}"
-          echo "Successfully built: dist/miaubot-${{ matrix.platform }}"
-          ls -lah "dist/miaubot-${{ matrix.platform }}"
-          
-          # Create compressed archive
-          tar -czf "dist/miaubot-${{ matrix.platform }}-v${{ needs.validate-version.outputs.version }}.tar.gz" \
-            -C dist "miaubot-${{ matrix.platform }}"
-        else
-          echo "Error: Executable not found"
-          exit 1
-        fi
+                 # Find and ensure correct naming of the executable
+         EXPECTED_NAME="dist/miaubot-${{ matrix.platform }}"
+         EXECUTABLE_FILE=$(find dist/ -name "miaubot-linux-*" -type f | head -1)
+         
+         if [ -n "$EXECUTABLE_FILE" ] && [ -f "$EXECUTABLE_FILE" ]; then
+           # Only rename if the file doesn't already have the correct name
+           if [ "$EXECUTABLE_FILE" != "$EXPECTED_NAME" ]; then
+             echo "Renaming $EXECUTABLE_FILE to $EXPECTED_NAME"
+             mv "$EXECUTABLE_FILE" "$EXPECTED_NAME"
+           else
+             echo "File already has correct name: $EXPECTED_NAME"
+           fi
+           
+           chmod +x "$EXPECTED_NAME"
+           echo "Successfully built: $EXPECTED_NAME"
+           ls -lah "$EXPECTED_NAME"
+           
+           # Create compressed archive
+           tar -czf "dist/miaubot-${{ matrix.platform }}-v${{ needs.validate-version.outputs.version }}.tar.gz" \
+             -C dist "miaubot-${{ matrix.platform }}"
+         else
+           echo "Error: Executable not found"
+           exit 1
+         fi
 
     - name: Test executable (AMD64 only)
       if: matrix.platform == 'linux-amd64'
