@@ -1,30 +1,70 @@
-# Byte-compiled / optimized / DLL files
+# Git and version control
+.git/
+.gitignore
+.github/
+
+# Python cache and build artifacts
 __pycache__/
 *.py[cod]
-
-# Distribution / packaging
+*.pyc
+*.pyo
+*.pyd
+.Python
 build/
 dist/
-wheels/
 *.egg-info/
+.pytest_cache/
+.ruff_cache/
 
 # Virtual environments
 .venv/
+venv/
+env/
+ENV/
 
-# Input and output directories
+# Testing and development
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation
+docs/
+*.md
+LICENSE
+README*
+
+# Local data directories
 input/
 output/
 data/
 
-# Testing
-tests/
-.pytest_cache/
-
-# Linter cache
-.ruff_cache/
-
-# Rclone config
+# Configuration files
 rclone.conf
-
-# Environment variables
 .env
+config.yml
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build system files (not needed in build context)
+build.sh
+Makefile
+*.log
+
+# Docker files themselves
+Dockerfile*
+docker-compose*

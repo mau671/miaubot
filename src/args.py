@@ -31,4 +31,14 @@ def parse_arguments():
         required=False,
         help="Upload all found files",
     )
+    parser.add_argument(
+        "--report-only",
+        action="store_true",
+        help="Only generate reports for existing files without uploading",
+    )
+    parser.add_argument(
+        "--remote-base",
+        required=False,
+        help="Base remote path for report generation (e.g., 'gdrive:Anime')",
+    )
     return parser.parse_args()

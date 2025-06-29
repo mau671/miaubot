@@ -1,0 +1,48 @@
+# Multi-stage build for creating standalone executables
+# Support for multiple architectures (linux/amd64, linux/arm64)
+FROM --platform=$BUILDPLATFORM python:3.12-slim AS builder
+
+# Build arguments for cross-compilation
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# Install system dependencies needed for building
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for fast dependency management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files first for better caching
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies using uv (much faster than pip)
+RUN uv sync --frozen --no-dev
+
+# Install PyInstaller
+RUN uv add pyinstaller
+
+# Copy source code
+COPY src/ ./src/
+COPY miaubot.py ./
+
+# Create the executable with dynamic naming based on target platform
+RUN ARCH=$(echo $TARGETPLATFORM | cut -d'/' -f2) && \
+    uv run pyinstaller \
+    --onefile \
+    --name miaubot-linux-${ARCH} \
+    --distpath /dist \
+    --workpath /tmp/build \
+    --specpath /tmp \
+    --clean \
+    --noupx \
+    miaubot.py
+
+# Final stage - minimal image with just the executable
+FROM scratch AS export
+COPY --from=builder /dist/miaubot-linux-* / 

@@ -28,3 +28,11 @@ rclone.conf
 
 # Environment variables
 .env
+
+# PyInstaller build artifacts
+*.spec
+*.manifest
+*.exe
+
+# Build system artifacts
+build.log

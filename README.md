@@ -110,3 +110,44 @@ Si deseas contribuir, puedes enviar problemas (issues) o solicitudes de incorpor
 ## Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](./LICENSE) para más detalles.
+
+## Build System
+
+### Cross-Compilation
+
+El sistema soporta builds para múltiples arquitecturas usando Docker Buildx con emulación QEMU:
+
+#### Arquitecturas Soportadas
+- `linux-amd64` (x86_64) - Nativo
+- `linux-arm64` (aarch64) - Cross-compilation
+
+#### Comandos de Build
+
+```bash
+# Build para la arquitectura actual (AMD64)
+make build
+make build-linux-amd64
+
+# Build para ARM64 (usando emulación)
+make build-linux-arm64
+
+# Build para todas las arquitecturas
+./build.sh build
+```
+
+#### Limitaciones de Cross-Compilation
+
+**Importante**: Debido a limitaciones de PyInstaller, los ejecutables generados actualmente mantienen la arquitectura del host (x86_64) incluso cuando se construyen para ARM64. Esto significa:
+
+- ✅ El build se ejecuta exitosamente usando emulación QEMU
+- ✅ El proceso de construcción funciona para todas las arquitecturas
+- ⚠️ El ejecutable resultante requiere arquitectura x86_64 para ejecutarse
+
+**Soluciones futuras:**
+1. Usar buildx nativo en hosts ARM64 para builds ARM64 reales
+2. Implementar builds nativos usando GitHub Actions con runners ARM64
+3. Considerar alternativas a PyInstaller que soporten mejor cross-compilation
+
+Para builds ARM64 reales, se recomienda ejecutar el build en hardware ARM64 nativo.
+
+### Build Requirements
