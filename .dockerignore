@@ -30,9 +30,10 @@ htmlcov/
 
 # Documentation
 docs/
-*.md
 LICENSE
-README*
+
+# Allow README.md for hatchling build
+!README.md
 
 # Local data directories
 input/
