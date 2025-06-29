@@ -57,8 +57,7 @@ wheels = [
 
 [[package]]
 name = "miaubot"
-version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "pymediainfo" },
     { name = "python-dotenv" },
