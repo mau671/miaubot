@@ -260,7 +260,11 @@ def get_backdrop_url(content_id: str, id_type: str, content_type: str) -> Option
                     ext_resp.raise_for_status()
                     ext_data = ext_resp.json()
                     artworks_ext = ext_data.get("data", {}).get("artworks", [])
-                    url = _extract_first(artworks_ext, 3) or _extract_first(artworks_ext, 2) or _extract_first(artworks_ext)
+                    url = (
+                        _extract_first(artworks_ext, 3)
+                        or _extract_first(artworks_ext, 2)
+                        or _extract_first(artworks_ext)
+                    )
                 except requests.RequestException:
                     url = None
                 if url:
