@@ -85,8 +85,13 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                 # use "copyto" / "moveto" instead of "copy" / "move" so that the
                 # destination includes the full filename. If the user already
                 # specified a *to variant we respect it.
-                if os.path.isfile(local_path) and upload_to_operation in ["copy", "move"]:
-                    operation_to_use = "copyto" if upload_to_operation == "copy" else "moveto"
+                if os.path.isfile(local_path) and upload_to_operation in [
+                    "copy",
+                    "move",
+                ]:
+                    operation_to_use = (
+                        "copyto" if upload_to_operation == "copy" else "moveto"
+                    )
                 else:
                     operation_to_use = upload_to_operation
 
