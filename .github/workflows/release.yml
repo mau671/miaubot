@@ -220,9 +220,8 @@ jobs:
         echo "" >> changelog.md
         echo "### 🔧 Installation" >> changelog.md
         echo "\`\`\`bash" >> changelog.md
-        echo "# Download and extract for your platform" >> changelog.md
-        echo "wget https://github.com/${{ github.repository }}/releases/download/${VERSION}/miaubot-linux-amd64-${VERSION}.tar.gz" >> changelog.md
-        echo "tar -xzf miaubot-linux-amd64-${VERSION}.tar.gz" >> changelog.md
+        echo "# Download for your platform" >> changelog.md
+        echo "wget https://github.com/${{ github.repository }}/releases/download/${VERSION}/miaubot-linux-amd64" >> changelog.md
         echo "chmod +x miaubot-linux-amd64" >> changelog.md
         echo "./miaubot-linux-amd64 --help" >> changelog.md
         echo "\`\`\`" >> changelog.md
