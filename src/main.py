@@ -71,8 +71,24 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                 if relative_path.startswith("./"):
                     relative_path = relative_path[2:]  # Remove './' if present
 
-                remote_path = os.path.join(upload_to_remote, relative_path)
+                # Get the name of the root folder (e.g. series or movie folder)
+                series_folder = os.path.basename(directory.rstrip("/"))
+
+                # Build the remote path including the root folder so that the
+                # hierarchy is preserved in the destination remote.
+                remote_path = os.path.join(
+                    upload_to_remote, series_folder, relative_path
+                ).replace(os.sep, "/")
                 local_path = file_path
+
+                # Decide the correct rclone operation. For single files we should
+                # use "copyto" / "moveto" instead of "copy" / "move" so that the
+                # destination includes the full filename. If the user already
+                # specified a *to variant we respect it.
+                if os.path.isfile(local_path) and upload_to_operation in ["copy", "move"]:
+                    operation_to_use = "copyto" if upload_to_operation == "copy" else "moveto"
+                else:
+                    operation_to_use = upload_to_operation
 
                 # Upload files
                 success = upload_files(
@@ -81,7 +97,7 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                     config_path=args.rc_config,
                     extra_args=args.rc_args,
                     dry_run=dry_run,
-                    operation=upload_to_operation,
+                    operation=operation_to_use,
                 )
                 if not success:
                     print(f"Error uploading file: {file}")
