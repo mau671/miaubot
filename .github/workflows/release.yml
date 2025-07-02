@@ -215,8 +215,8 @@ jobs:
         echo "${COMMITS}" >> changelog.md
         echo "" >> changelog.md
         echo "### 📦 Assets" >> changelog.md
-        echo "- \`miaubot-linux-amd64-${VERSION}.tar.gz\` - Linux AMD64 executable" >> changelog.md
-        echo "- \`miaubot-linux-arm64-${VERSION}.tar.gz\` - Linux ARM64 executable" >> changelog.md
+        echo "- \`miaubot-linux-amd64\` - Linux AMD64 executable" >> changelog.md
+        echo "- \`miaubot-linux-arm64\` - Linux ARM64 executable" >> changelog.md
         echo "" >> changelog.md
         echo "### 🔧 Installation" >> changelog.md
         echo "\`\`\`bash" >> changelog.md
@@ -261,7 +261,7 @@ jobs:
     - name: Prepare release assets
       run: |
         mkdir -p release-assets
-        find artifacts/ -name "*.tar.gz" -exec cp {} release-assets/ \;
+        # Copiar únicamente los ejecutables (excluyendo cualquier archivo comprimido)
         find artifacts/ -name "miaubot-linux-*" -type f ! -name "*.tar.gz" -exec cp {} release-assets/ \;
         ls -la release-assets/
 
@@ -294,7 +294,7 @@ jobs:
         echo "**Prerelease:** ${{ github.event.inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
-        echo "- miaubot-linux-amd64-v${{ needs.validate-version.outputs.version }}.tar.gz" >> $GITHUB_STEP_SUMMARY
-        echo "- miaubot-linux-arm64-v${{ needs.validate-version.outputs.version }}.tar.gz" >> $GITHUB_STEP_SUMMARY
+        echo "- miaubot-linux-amd64" >> $GITHUB_STEP_SUMMARY
+        echo "- miaubot-linux-arm64" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "🔗 **Release URL:** https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY 
