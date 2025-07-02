@@ -78,6 +78,7 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
             platform_patterns = [
                 "AMZN",
                 "CR",
+                "AO",
                 "NF",
                 "HULU",
                 "DSNP",
