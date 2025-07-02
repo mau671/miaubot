@@ -265,6 +265,31 @@ def send_report(
         print("Send simulation:")
         print("Backdrop URL:", backdrop_url)
         print("Report:\n", report)
+
+        # Mostrar cómo sería la petición HTTP hacia la API de Telegram
+        if backdrop_url:
+            method = "sendPhoto"
+            payload = {
+                "chat_id": chat_id,
+                "caption": report,
+                "parse_mode": "HTML",
+                "photo": backdrop_url,
+            }
+        else:
+            method = "sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": report,
+                "parse_mode": "HTML",
+            }
+
+        url = f"https://api.telegram.org/bot{token}/{method}"
+        import json
+
+        print("Telegram request (simulated):")
+        print(f"POST {url}")
+        print("Payload:")
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         try:
             print("Sending report to Telegram...")
