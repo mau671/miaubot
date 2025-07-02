@@ -298,12 +298,38 @@ def send_report(
 
             if use_photo:
                 url = f"https://api.telegram.org/bot{token}/sendPhoto"
-                payload = {
-                    "chat_id": chat_id,
-                    "caption": report,
-                    "parse_mode": "HTML",
-                    "photo": backdrop_url,
-                }
+
+                # Download image locally to send as multipart/form-data
+                import tempfile
+                import os
+
+                try:
+                    img_resp = requests.get(backdrop_url, timeout=15, stream=True)
+                    img_resp.raise_for_status()
+
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, suffix=".jpg"
+                    ) as tmp_img:
+                        for chunk in img_resp.iter_content(chunk_size=8192):
+                            tmp_img.write(chunk)
+                        temp_image_path = tmp_img.name
+
+                    payload = {
+                        "chat_id": chat_id,
+                        "caption": report,
+                        "parse_mode": "HTML",
+                    }
+
+                    with open(temp_image_path, "rb") as img_file:
+                        response = requests.post(
+                            url, data=payload, files={"photo": img_file}
+                        )
+                finally:
+                    # Ensure the temporary image is removed
+                    try:
+                        os.remove(temp_image_path)
+                    except Exception:
+                        pass
             else:
                 # Either there is no backdrop or the caption is too long
                 url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -313,12 +339,31 @@ def send_report(
                     "parse_mode": "HTML",
                 }
 
-            response = requests.post(url, data=payload)
+            # When use_photo branch already executed a request, ensure we don't reassign
+            if not use_photo:
+                response = requests.post(url, data=payload)
 
+            # If sendPhoto fails (e.g. invalid URL), fall back to sendMessage
             if response.status_code != 200:
                 print("Error response from Telegram:")
                 print(response.text)
-                response.raise_for_status()
+
+                if use_photo:
+                    print("Falling back to sendMessage without photo…")
+                    url_fallback = f"https://api.telegram.org/bot{token}/sendMessage"
+                    payload_fallback = {
+                        "chat_id": chat_id,
+                        "text": report,
+                        "parse_mode": "HTML",
+                    }
+                    response_fb = requests.post(url_fallback, data=payload_fallback)
+
+                    if response_fb.status_code != 200:
+                        print("Fallback sendMessage also failed:")
+                        print(response_fb.text)
+                        response_fb.raise_for_status()
+                else:
+                    response.raise_for_status()
 
             print("Report sent successfully.")
         except requests.RequestException as e:
