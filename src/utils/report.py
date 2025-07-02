@@ -221,22 +221,22 @@ def get_backdrop_url(content_id: str, id_type: str, content_type: str) -> Option
 
             if content_type == "movie":
                 artworks = data.get("data", {}).get("artworks", [])
-                # 15 = hero/backdrop, 1 = poster (per TVDB docs)
+                # 15 = hero/backdrop, 14 = poster (movie)
                 url = _extract_first(artworks, 15)
                 if not url:
-                    url = _extract_first(artworks, 1)
+                    url = _extract_first(artworks, 14)
                 if url:
                     return url
             else:
                 artworks = data.get("data", []).get("artworks", [])
-                # Attempt to get backdrop (type 3) else poster (type 1)
+                # Attempt to get backdrop (type 3) else poster (type 2)
                 url = _extract_first(artworks, 3)
                 if not url:
-                    # Fallback: make another request for posters (type 1) if initial request was for type 3
+                    # Fallback: make another request for posters (type 2) if initial request was for type 3
                     try:
                         # Request posters
                         poster_resp = requests.get(
-                            f"https://api4.thetvdb.com/v4/series/{content_id}/artworks?type=1",
+                            f"https://api4.thetvdb.com/v4/series/{content_id}/artworks?type=2",
                             headers=headers,
                             timeout=10,
                         )
@@ -247,6 +247,22 @@ def get_backdrop_url(content_id: str, id_type: str, content_type: str) -> Option
                         url = _extract_first(poster_arts)
                     except requests.RequestException:
                         url = None
+                if url:
+                    return url
+
+                # Final fallback: request extended info and try to extract any hero or poster image
+                try:
+                    ext_resp = requests.get(
+                        f"https://api4.thetvdb.com/v4/series/{content_id}/extended",
+                        headers=headers,
+                        timeout=10,
+                    )
+                    ext_resp.raise_for_status()
+                    ext_data = ext_resp.json()
+                    artworks_ext = ext_data.get("data", {}).get("artworks", [])
+                    url = _extract_first(artworks_ext, 3) or _extract_first(artworks_ext, 2) or _extract_first(artworks_ext)
+                except requests.RequestException:
+                    url = None
                 if url:
                     return url
     except requests.RequestException as e:
