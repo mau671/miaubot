@@ -2,6 +2,8 @@ import requests
 from typing import Dict, Optional
 from src.config import TMDB_API_KEY, TVDB_API_KEY
 
+_CACHED_TVDB_TOKEN: Optional[str] = None
+
 
 def normalize_audio_codecs(audio_info: str) -> str:
     """
@@ -281,17 +283,21 @@ def get_tvdb_token(api_key: str) -> Optional[str]:
     :param api_key: API key for TheTVDB.
     :return: Bearer token or None if the request fails.
     """
+    # Re-use cached token during the lifetime of the process (TVDB tokens are valid ~1 month)
+    global _CACHED_TVDB_TOKEN
+
+    if _CACHED_TVDB_TOKEN:
+        return _CACHED_TVDB_TOKEN
+
     try:
-        # Define the API endpoint and payload
         url = "https://api4.thetvdb.com/v4/login"
         payload = {"apikey": api_key}
         headers = {"accept": "application/json", "Content-Type": "application/json"}
-        # Make the POST request
         response = requests.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
 
-        # Extract the token from the response
-        return response.json().get("data", {}).get("token")
+        _CACHED_TVDB_TOKEN = response.json().get("data", {}).get("token")
+        return _CACHED_TVDB_TOKEN
     except requests.RequestException as e:
         print(f"Error obtaining TVDB token: {e}")
     return None

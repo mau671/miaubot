@@ -4,7 +4,9 @@ from typing import Optional, Dict
 # Regular expression pattern to match new anime structure
 # Format: "Title (Year) - S01E01 - 001 - [Quality Info] - Group.mkv"
 FILE_PATTERN = (
-    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2}) - (\d{3}) - \[.+?\] .+ - .+\.(\w+)$"
+    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2}) - (\d{3})"  # series, year, SxxExx, absolute num
+    r"(?: - [^\[]+)?"  # optional ' - Episode Title'
+    r" - \[.+?\] .+ - .+\.(\w+)$"  # quality and group
 )
 
 # Alternative pattern for old format compatibility
@@ -78,7 +80,6 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
             platform_patterns = [
                 "AMZN",
                 "CR",
-                "AO",
                 "NF",
                 "HULU",
                 "DSNP",
@@ -86,6 +87,7 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
                 "PMTP",
                 "MAX",
                 "STAN",
+                "AO",  # Anime One or similar
             ]
 
             platform = "WEB-DL"
