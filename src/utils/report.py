@@ -266,7 +266,7 @@ def send_report(
         print("Backdrop URL:", backdrop_url)
         print("Report:\n", report)
 
-        # Mostrar cómo sería la petición HTTP hacia la API de Telegram
+        # Display the HTTP request that would be sent to the Telegram API
         if backdrop_url:
             method = "sendPhoto"
             payload = {
@@ -293,22 +293,33 @@ def send_report(
     else:
         try:
             print("Sending report to Telegram...")
-            if backdrop_url:
-                response = requests.post(
-                    f"https://api.telegram.org/bot{token}/sendPhoto",
-                    data={
-                        "chat_id": chat_id,
-                        "caption": report,
-                        "parse_mode": "HTML",
-                        "photo": backdrop_url,
-                    },
-                )
+            # If the caption is too long for sendPhoto (1024-char limit) we fall back to sendMessage
+            use_photo = backdrop_url is not None and len(report) <= 1024
+
+            if use_photo:
+                url = f"https://api.telegram.org/bot{token}/sendPhoto"
+                payload = {
+                    "chat_id": chat_id,
+                    "caption": report,
+                    "parse_mode": "HTML",
+                    "photo": backdrop_url,
+                }
             else:
-                response = requests.post(
-                    f"https://api.telegram.org/bot{token}/sendMessage",
-                    data={"chat_id": chat_id, "text": report, "parse_mode": "HTML"},
-                )
-            response.raise_for_status()
+                # Either there is no backdrop or the caption is too long
+                url = f"https://api.telegram.org/bot{token}/sendMessage"
+                payload = {
+                    "chat_id": chat_id,
+                    "text": report,
+                    "parse_mode": "HTML",
+                }
+
+            response = requests.post(url, data=payload)
+
+            if response.status_code != 200:
+                print("Error response from Telegram:")
+                print(response.text)
+                response.raise_for_status()
+
             print("Report sent successfully.")
         except requests.RequestException as e:
             print(f"Error sending report to Telegram: {e}")

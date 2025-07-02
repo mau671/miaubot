@@ -261,7 +261,7 @@ jobs:
     - name: Prepare release assets
       run: |
         mkdir -p release-assets
-        # Copiar únicamente los ejecutables (excluyendo cualquier archivo comprimido)
+        # Copy only the executables (skip any compressed archives)
         find artifacts/ -name "miaubot-linux-*" -type f ! -name "*.tar.gz" -exec cp {} release-assets/ \;
         ls -la release-assets/
 
