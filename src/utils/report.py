@@ -204,19 +204,51 @@ def get_backdrop_url(content_id: str, id_type: str, content_type: str) -> Option
         data = response.json()
 
         if id_type == "tmdbid":
-            return f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}"
+            # Try backdrop first, then poster
+            backdrop_path = data.get("backdrop_path")
+            poster_path = data.get("poster_path")
+            if backdrop_path:
+                return f"https://image.tmdb.org/t/p/original{backdrop_path}"
+            if poster_path:
+                return f"https://image.tmdb.org/t/p/original{poster_path}"
         elif id_type == "tvdbid":
+
+            def _extract_first(arts, art_type=None):
+                for art in arts:
+                    if art_type is None or art.get("type") == art_type:
+                        return art.get("image")
+                return None
+
             if content_type == "movie":
-                # Extract the first artwork with type 15 from /extended
                 artworks = data.get("data", {}).get("artworks", [])
-                for artwork in artworks:
-                    if artwork.get("type") == 15:
-                        return artwork.get("image")
+                # 15 = hero/backdrop, 1 = poster (per TVDB docs)
+                url = _extract_first(artworks, 15)
+                if not url:
+                    url = _extract_first(artworks, 1)
+                if url:
+                    return url
             else:
-                # Extract the first artwork from /artworks
                 artworks = data.get("data", []).get("artworks", [])
-                if artworks:
-                    return artworks[0].get("image")
+                # Attempt to get backdrop (type 3) else poster (type 1)
+                url = _extract_first(artworks, 3)
+                if not url:
+                    # Fallback: make another request for posters (type 1) if initial request was for type 3
+                    try:
+                        # Request posters
+                        poster_resp = requests.get(
+                            f"https://api4.thetvdb.com/v4/series/{content_id}/artworks?type=1",
+                            headers=headers,
+                            timeout=10,
+                        )
+                        poster_resp.raise_for_status()
+                        poster_arts = (
+                            poster_resp.json().get("data", []).get("artworks", [])
+                        )
+                        url = _extract_first(poster_arts)
+                    except requests.RequestException:
+                        url = None
+                if url:
+                    return url
     except requests.RequestException as e:
         print(f"Error fetching data for {id_type}: {e}")
     return None
