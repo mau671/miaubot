@@ -314,7 +314,9 @@ def main() -> None:
 
             media_info = get_media_info(input_path)
 
-            remote_path = os.path.join(args.remote_base, os.path.basename(input_path)).replace(os.sep, "/")
+            remote_path = os.path.join(
+                args.remote_base, os.path.basename(input_path)
+            ).replace(os.sep, "/")
 
             report = format_report(info, media_info, remote_path)
             backdrop_url = get_backdrop_url(info["id"], info["id_type"], info["type"])
