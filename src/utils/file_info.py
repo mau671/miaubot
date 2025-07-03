@@ -20,6 +20,14 @@ OLD_FILE_PATTERN = (
 # Pattern to extract TVDB ID from folder name
 FOLDER_PATTERN = r"\[tvdbid-(\d+)\]$"
 
+# Pattern for extended movie naming with id before quality blocks
+EXT_MOVIE_PATTERN = (
+    r"^(.+?) \((\d{4})\) "           # Title and year
+    r"\[(tmdbid|tvdbid)-(\d+)\]"      # ID block with dash
+    r"(?: - (.+))?"                     # The rest of the name (quality info blocks)
+    r"\.(\w+)$"                        # Extension
+)
+
 
 def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
     """
@@ -110,6 +118,52 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
                 "type": "series",
                 "quality_info": quality_info,
             }
+
+    # Extended movie format with ID before quality
+    match = re.match(EXT_MOVIE_PATTERN, file_name)
+    if match:
+        title, year, id_type, id_val, rest_info, extension = match.groups()
+
+        quality_info = rest_info or ""
+
+        # Extract resolution
+        resolution_match = re.search(r"(\d{3,4}p)", quality_info)
+        resolution = resolution_match.group(1) if resolution_match else "Unknown"
+
+        # Extract platform
+        platform_patterns = [
+            "AMZN",
+            "CR",
+            "NF",
+            "HULU",
+            "DSNP",
+            "ATVP",
+            "PMTP",
+            "MAX",
+            "STAN",
+            "AO",  # Anime One or similar
+        ]
+
+        platform = "WEB-DL"
+        for pattern in platform_patterns:
+            if pattern in quality_info:
+                platform = pattern
+                break
+
+        return {
+            "title": title,
+            "year": year,
+            "season": None,
+            "episode": None,
+            "episode_number": None,
+            "resolution": resolution,
+            "platform": platform,
+            "id_type": id_type,
+            "id": id_val,
+            "extension": extension,
+            "type": "movie",
+            "quality_info": quality_info,
+        }
 
     # Fallback to old format
     match = re.match(OLD_FILE_PATTERN, file_name)
