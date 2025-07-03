@@ -22,10 +22,10 @@ FOLDER_PATTERN = r"\[tvdbid-(\d+)\]$"
 
 # Pattern for extended movie naming with id before quality blocks
 EXT_MOVIE_PATTERN = (
-    r"^(.+?) \((\d{4})\) "           # Title and year
-    r"\[(tmdbid|tvdbid)-(\d+)\]"      # ID block with dash
-    r"(?: - (.+))?"                     # The rest of the name (quality info blocks)
-    r"\.(\w+)$"                        # Extension
+    r"^(.+?) \((\d{4})\) "  # Title and year
+    r"\[(tmdbid|tvdbid)-(\d+)\]"  # ID block with dash
+    r"(?: - (.+))?"  # The rest of the name (quality info blocks)
+    r"\.(\w+)$"  # Extension
 )
 
 
