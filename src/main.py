@@ -1,4 +1,5 @@
 import os
+import sys
 from src.config import TG_BOT_TOKEN, TG_CHAT_ID
 from src.args import parse_arguments
 from src.utils.file_info import get_file_info
@@ -272,37 +273,66 @@ def main() -> None:
     """
     Main entry point. Processes the folder or file specified in the arguments.
     """
-    folder_path = args.input.rstrip("/") + "/"
-    if not os.path.exists(folder_path):
-        print(f"Error: The folder '{folder_path}' does not exist.")
-        exit(1)
-    if not os.path.isdir(folder_path):
-        print(f"Error: The input path '{folder_path}' is not a valid directory.")
-        exit(1)
+    # Determine if input is a directory or a single file
+    input_path = args.input
 
-    # Check if we're in report-only mode
+    if not os.path.exists(input_path):
+        print(f"Error: The path '{input_path}' does not exist.")
+        sys.exit(1)
+
+    is_directory = os.path.isdir(input_path)
+
+    # For directory paths we normalise with a trailing slash (used elsewhere)
+    folder_path = input_path.rstrip("/") + "/" if is_directory else input_path
+
     if args.report_only:
         if not args.remote_base:
             print("Error: --remote-base is required when using --report-only mode.")
             print("Example: --remote-base 'gdrive:Anime'")
-            exit(1)
-        print(f"Running in report-only mode for: {folder_path}")
-        print(f"Remote base path: {args.remote_base}")
-        process_directory_report_only(
-            folder_path, args.remote_base, dry_run=args.dry_run
-        )
+            sys.exit(1)
+
+        if is_directory:
+            print(f"Running in report-only mode for: {folder_path}")
+            print(f"Remote base path: {args.remote_base}")
+            process_directory_report_only(
+                folder_path, args.remote_base, dry_run=args.dry_run
+            )
+        else:
+            # Single file report
+            from src.utils.file_info import get_file_info
+            from src.utils.media_info import get_media_info
+            from src.utils.report import (
+                format_report,
+                get_backdrop_url,
+                send_report,
+            )
+
+            info = get_file_info(input_path)
+            if not info:
+                print("Invalid file name format.")
+                sys.exit(1)
+
+            media_info = get_media_info(input_path)
+
+            remote_path = os.path.join(args.remote_base, os.path.basename(input_path)).replace(os.sep, "/")
+
+            report = format_report(info, media_info, remote_path)
+            backdrop_url = get_backdrop_url(info["id"], info["id_type"], info["type"])
+
+            send_report(TG_CHAT_ID, TG_BOT_TOKEN, report, backdrop_url, args.dry_run)
+
     else:
         # Standard mode with file upload
         if not args.rc_upload_to:
             print(
                 "Error: --rc-upload-to is required when not using --report-only mode."
             )
-            exit(1)
+            sys.exit(1)
         if not os.path.isfile(args.rc_config):
             print(
                 f"Error: The rclone configuration file '{args.rc_config}' does not exist."
             )
-            exit(1)
+            sys.exit(1)
         print(f"Running in upload mode for: {folder_path}")
         process_directory(folder_path, dry_run=args.dry_run)
 
