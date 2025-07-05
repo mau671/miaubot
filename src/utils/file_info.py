@@ -28,6 +28,36 @@ EXT_MOVIE_PATTERN = (
     r"\.(\w+)$"  # Extension
 )
 
+# Helper to detect platform from quality string
+def _detect_platform(qi: str) -> str:
+    qi_upper = qi.upper()
+
+    # Streaming service acronyms
+    for service in [
+        "AMZN",
+        "CR",
+        "NF",
+        "HULU",
+        "DSNP",
+        "ATVP",
+        "PMTP",
+        "MAX",
+        "STAN",
+        "AO",
+    ]:
+        if service in qi_upper:
+            return service
+
+    if "WEBRIP" in qi_upper:
+        return "WEBRip"
+
+    if "WEB" in qi_upper:
+        return "WEB-DL"
+
+    if "BD" in qi_upper or "BLURAY" in qi_upper:
+        return "BD"
+
+    return "WEB-DL"
 
 def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
     """
@@ -84,25 +114,8 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
             resolution_match = re.search(r"(\d{3,4}p)", quality_info)
             resolution = resolution_match.group(1) if resolution_match else "Unknown"
 
-            # Extract platform from quality info
-            platform_patterns = [
-                "AMZN",
-                "CR",
-                "NF",
-                "HULU",
-                "DSNP",
-                "ATVP",
-                "PMTP",
-                "MAX",
-                "STAN",
-                "AO",  # Anime One or similar
-            ]
-
-            platform = "WEB-DL"
-            for pattern in platform_patterns:
-                if pattern in quality_info:
-                    platform = pattern
-                    break
+            # Detect platform using helper
+            platform = _detect_platform(quality_info)
 
             return {
                 "title": match.group(1),
@@ -130,25 +143,8 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
         resolution_match = re.search(r"(\d{3,4}p)", quality_info)
         resolution = resolution_match.group(1) if resolution_match else "Unknown"
 
-        # Extract platform
-        platform_patterns = [
-            "AMZN",
-            "CR",
-            "NF",
-            "HULU",
-            "DSNP",
-            "ATVP",
-            "PMTP",
-            "MAX",
-            "STAN",
-            "AO",  # Anime One or similar
-        ]
-
-        platform = "WEB-DL"
-        for pattern in platform_patterns:
-            if pattern in quality_info:
-                platform = pattern
-                break
+        # Detect platform using helper
+        platform = _detect_platform(quality_info)
 
         return {
             "title": title,
