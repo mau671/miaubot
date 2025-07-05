@@ -3,10 +3,12 @@ from typing import Optional, Dict
 
 # Regular expression pattern to match new anime structure
 # Format: "Title (Year) - S01E01 - 001 - [Quality Info] - Group.mkv"
+# Series pattern: absolute episode number segment (###) is optional; episode title segment optional too
 FILE_PATTERN = (
-    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2}) - (\d{3})"  # series, year, SxxExx, absolute num
-    r"(?: - [^\[]+)?"  # optional ' - Episode Title'
-    r" - \[.+?\] .+ - .+\.(\w+)$"  # quality and group
+    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2})"          # title, year, season, episode
+    r"(?: - (\d{3}))?"                                     # optional absolute episode number
+    r"(?: - [^\[]+)?"                                     # optional episode title
+    r" - \[.+?\] .+ - .+\.(\w+)$"                      # quality block and extension
 )
 
 # Alternative pattern for old format compatibility
