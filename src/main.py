@@ -299,14 +299,6 @@ def main() -> None:
             )
         else:
             # Single file report
-            from src.utils.file_info import get_file_info
-            from src.utils.media_info import get_media_info
-            from src.utils.report import (
-                format_report,
-                get_backdrop_url,
-                send_report,
-            )
-
             info = get_file_info(input_path)
             if not info:
                 print("Invalid file name format.")
@@ -389,15 +381,6 @@ def main() -> None:
         else:
             # Single file upload
             print(f"Single file upload mode for: {input_path}")
-            from src.utils.file_info import get_file_info
-            from src.utils.media_info import get_media_info
-            from src.utils.rclone import upload_files
-            from src.utils.report import (
-                format_report,
-                get_backdrop_url,
-                send_report,
-            )
-
             info = get_file_info(input_path)
             if not info:
                 print("Invalid file name format.")
@@ -405,7 +388,9 @@ def main() -> None:
                 sys.exit(1)
 
             # Parse upload target
-            upload_to_operation, upload_to_remote = parse_upload_target(args.rc_upload_to)
+            upload_to_operation, upload_to_remote = parse_upload_target(
+                args.rc_upload_to
+            )
 
             print(f"Processing file: {os.path.basename(input_path)}")
             print(f"File info parsed: {info}")
