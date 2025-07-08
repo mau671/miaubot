@@ -5,10 +5,10 @@ from typing import Optional, Dict
 # Format: "Title (Year) - S01E01 - 001 - [Quality Info] - Group.mkv"
 # Series pattern: absolute episode number segment (###) is optional; episode title segment optional too
 FILE_PATTERN = (
-    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2})"          # title, year, season, episode
-    r"(?: - (\d{3}))?"                                     # optional absolute episode number
-    r"(?: - [^\[]+)?"                                     # optional episode title
-    r" - \[.+?\] .+ - .+\.(\w+)$"                      # quality block and extension
+    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2})"  # title, year, season, episode
+    r"(?: - (\d{3}))?"  # optional absolute episode number
+    r"(?: - [^\[]+)?"  # optional episode title
+    r" - \[.+?\] .+ - .+\.(\w+)$"  # quality block and extension
 )
 
 # Alternative pattern for old format compatibility
@@ -29,6 +29,7 @@ EXT_MOVIE_PATTERN = (
     r"(?: - (.+))?"  # The rest of the name (quality info blocks)
     r"\.(\w+)$"  # Extension
 )
+
 
 # Helper to detect platform from quality string
 def _detect_platform(qi: str) -> str:
@@ -60,6 +61,7 @@ def _detect_platform(qi: str) -> str:
         return "BD"
 
     return "WEB-DL"
+
 
 def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
     """
