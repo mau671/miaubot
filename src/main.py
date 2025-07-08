@@ -386,6 +386,79 @@ def main() -> None:
         if is_directory:
             print(f"Running in upload mode for: {folder_path}")
             process_directory(folder_path, dry_run=args.dry_run)
+        else:
+            # Single file upload
+            print(f"Single file upload mode for: {input_path}")
+            from src.utils.file_info import get_file_info
+            from src.utils.media_info import get_media_info
+            from src.utils.rclone import upload_files
+            from src.utils.report import (
+                format_report,
+                get_backdrop_url,
+                send_report,
+            )
+
+            info = get_file_info(input_path)
+            if not info:
+                print("Invalid file name format.")
+                print(f"File that failed: {input_path}")
+                sys.exit(1)
+
+            # Parse upload target
+            upload_to_operation, upload_to_remote = parse_upload_target(args.rc_upload_to)
+
+            print(f"Processing file: {os.path.basename(input_path)}")
+            print(f"File info parsed: {info}")
+
+            media_info = get_media_info(input_path)
+
+            # For series files, preserve directory structure from anime root
+            # Find series root folder (contains tvdbid)
+            path_parts = input_path.split(os.sep)
+            series_folder_idx = None
+            for i, part in enumerate(path_parts):
+                if "[tvdbid-" in part or "[tmdbid-" in part:
+                    series_folder_idx = i
+                    break
+
+            if series_folder_idx is not None:
+                # Preserve structure from series folder onward
+                relative_structure = os.sep.join(path_parts[series_folder_idx:])
+                remote_path = os.path.join(
+                    upload_to_remote, relative_structure
+                ).replace(os.sep, "/")
+            else:
+                # Fallback: just filename
+                remote_path = os.path.join(
+                    upload_to_remote, os.path.basename(input_path)
+                ).replace(os.sep, "/")
+
+            # Use copyto/moveto for single files
+            operation = (
+                "copyto"
+                if upload_to_operation == "copy"
+                else (
+                    "moveto" if upload_to_operation == "move" else upload_to_operation
+                )
+            )
+
+            success = upload_files(
+                local_path=input_path,
+                remote_path=remote_path,
+                config_path=args.rc_config,
+                extra_args=args.rc_args,
+                dry_run=args.dry_run,
+                operation=operation,
+            )
+
+            if not success:
+                print(f"Error uploading file: {os.path.basename(input_path)}")
+                sys.exit(1)
+
+            # Send report
+            report = format_report(info, media_info, remote_path)
+            backdrop_url = get_backdrop_url(info["id"], info["id_type"], info["type"])
+            send_report(TG_CHAT_ID, TG_BOT_TOKEN, report, backdrop_url, args.dry_run)
 
 
 if __name__ == "__main__":
