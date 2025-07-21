@@ -35,10 +35,10 @@ EXT_MOVIE_PATTERN = (
 def _detect_platform(qi: str) -> str:
     qi_upper = qi.upper()
 
-    # Streaming service acronyms
-    for service in [
+    # Check for streaming service with WEB-DL/WEBRip combinations first
+    streaming_services = [
         "AMZN",
-        "CR",
+        "CR", 
         "NF",
         "HULU",
         "DSNP",
@@ -47,20 +47,30 @@ def _detect_platform(qi: str) -> str:
         "MAX",
         "STAN",
         "AO",
-    ]:
+    ]
+    
+    for service in streaming_services:
         if service in qi_upper:
-            return service
+            # Check if it's combined with WEB-DL or WEBRip
+            if "WEB-DL" in qi_upper:
+                return f"{service} WEB-DL"
+            elif "WEBRIP" in qi_upper:
+                return f"{service} WEBRip"
+            else:
+                return service
 
+    # Check for standalone web formats
     if "WEBRIP" in qi_upper:
         return "WEBRip"
 
-    if "WEB" in qi_upper:
+    if "WEB-DL" in qi_upper:
         return "WEB-DL"
 
     if "BD" in qi_upper or "BLURAY" in qi_upper:
         return "BD"
 
-    return "WEB-DL"
+    # Return "Unknown" instead of defaulting to WEB-DL when no platform indicators are found
+    return "Unknown"
 
 
 def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:

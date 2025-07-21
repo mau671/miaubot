@@ -59,23 +59,26 @@ def format_report(
         f"S{info['season']}E{info['episode']}" if content_type == "series" else "Movie"
     )
 
-    # Determine quality type based on platform
-    if platform.lower() in ["dvd", "bd", "encode"]:
-        quality_type = platform
-    else:
-        quality_type = "WEB-DL"
-
     video_details = (
         media_info["video"].split(", ")[0] if media_info["video"] else "Unknown"
     )
 
-    # Include platform only in final_quality if it's not already part of quality_type
-    if platform.lower() == quality_type.lower():
-        final_quality = (
-            f"{resolution} {quality_type} ({video_details.split(' ')[1]})".strip()
-        )
+    # Extract codec from video details
+    try:
+        codec = video_details.split(' ')[1] if len(video_details.split(' ')) > 1 else "Unknown"
+    except (IndexError, AttributeError):
+        codec = "Unknown"
+
+    # Build quality string based on available platform information
+    if platform.lower() == "unknown":
+        # No platform information available, show only resolution and codec
+        final_quality = f"{resolution} ({codec})"
+    elif platform.lower() in ["dvd", "bd", "encode"]:
+        # Physical media or encode
+        final_quality = f"{resolution} {platform} ({codec})"
     else:
-        final_quality = f"{resolution} {platform} {quality_type} ({video_details.split(' ')[1]})".strip()
+        # Web platform (streaming services, WEB-DL, WEBRip)
+        final_quality = f"{resolution} {platform} ({codec})"
 
     return (
         f"#miauporte <b>{title} ({year}){f' - {season_episode}' if content_type == 'series' else ''}</b>\n\n"
@@ -117,33 +120,28 @@ def format_consolidated_report(episodes: list, base_remote_path: str) -> str:
     else:
         season_episode = f"S{season}E{min_episode:02d}-E{max_episode:02d}"
 
-    # Determine quality type based on platform
-    if platform.lower() in ["dvd", "bd", "encode"]:
-        quality_type = platform
-    else:
-        quality_type = "WEB-DL"
-
     video_details = (
         base_media_info["video"].split(", ")[0]
         if base_media_info["video"]
         else "Unknown"
     )
 
-    # Extract quality info from new format if available
-    if "quality_info" in base_info and base_info["quality_info"]:
-        # Extract codec and other info from quality string
-        try:
-            parts = video_details.split(" ")
-            codec = parts[1] if len(parts) > 1 else "AVC"
-            final_quality = f"{resolution} {platform} {quality_type} ({codec})"
-        except (IndexError, AttributeError):
-            final_quality = f"{resolution} {platform} {quality_type}"
+    # Extract codec from video details
+    try:
+        codec = video_details.split(' ')[1] if len(video_details.split(' ')) > 1 else "Unknown"
+    except (IndexError, AttributeError):
+        codec = "Unknown"
+
+    # Build quality string based on available platform information
+    if platform.lower() == "unknown":
+        # No platform information available, show only resolution and codec
+        final_quality = f"{resolution} ({codec})"
+    elif platform.lower() in ["dvd", "bd", "encode"]:
+        # Physical media or encode
+        final_quality = f"{resolution} {platform} ({codec})"
     else:
-        # Fallback for old format
-        try:
-            final_quality = f"{resolution} {platform} {quality_type} ({video_details.split(' ')[1]})"
-        except (IndexError, AttributeError):
-            final_quality = f"{resolution} {platform} {quality_type}"
+        # Web platform (streaming services, WEB-DL, WEBRip)
+        final_quality = f"{resolution} {platform} ({codec})"
 
     # Extract base path from remote path (remove specific episode filename)
     import os
