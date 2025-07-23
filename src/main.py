@@ -17,6 +17,19 @@ import tempfile
 args = parse_arguments()
 
 
+def get_episode_sort_key(episode_str: str) -> int:
+    """
+    Extract the first episode number from episode string for sorting.
+    
+    :param episode_str: Episode string like "01" or "04-06"
+    :return: Integer value of the first episode number
+    """
+    # Extract first episode number from format like "04-06" or just "01"
+    if "-" in episode_str:
+        return int(episode_str.split("-")[0])
+    return int(episode_str)
+
+
 def parse_upload_target(target: str):
     """
     Parses the upload target to extract the operation and the remote path.
@@ -118,7 +131,7 @@ def process_directory(directory: str, dry_run: bool = False) -> None:
                             "info": info,
                             "media_info": media_info,
                             "remote_path": remote_path,
-                            "episode": int(info["episode"]),
+                            "episode": get_episode_sort_key(info["episode"]),
                         }
                     )
                 else:
@@ -236,7 +249,7 @@ def process_directory_report_only(
                             "info": info,
                             "media_info": media_info,
                             "remote_path": remote_path,
-                            "episode": int(info["episode"]),
+                            "episode": get_episode_sort_key(info["episode"]),
                         }
                     )
                 else:

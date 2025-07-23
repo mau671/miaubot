@@ -3,10 +3,11 @@ from typing import Optional, Dict
 
 # Regular expression pattern to match new anime structure
 # Format: "Title (Year) - S01E01 - 001 - [Quality Info] - Group.mkv"
+# Also supports multi-episode format: "Title (Year) - S01E01-E03 - 001-003 - [Quality Info] - Group.mkv"
 # Series pattern: absolute episode number segment (###) is optional; episode title segment optional too
 FILE_PATTERN = (
-    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2})"  # title, year, season, episode
-    r"(?: - (\d{3}))?"  # optional absolute episode number
+    r"^(.+?) \((\d{4})\) - S(\d{2})E(\d{2})(?:-E(\d{2}))?"  # title, year, season, episode, optional end episode
+    r"(?: - (\d{3})(?:-(\d{3}))?)?"  # optional absolute episode number(s)
     r"(?: - [^\[]+)?"  # optional episode title
     r" - \[.+?\] .+ - .+\.(\w+)$"  # quality block and extension
 )
@@ -80,6 +81,7 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
 
     New anime structure:
         - "Series Name (Year) [tvdbid-123456]/Season 01/Series Name (Year) - S01E01 - 001 - [Quality] - Group.mkv"
+        - "Series Name (Year) [tvdbid-123456]/Season 01/Series Name (Year) - S01E04-E06 - 030-032 - [Quality] - Group.mkv" (multi-episode)
 
     Old formats:
         - Series: "Title (Year) - S01E01 - [1080p] [Platform] [tmdbid=123456].mkv"
@@ -96,8 +98,8 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
             - "title" (str): The title of the series or movie.
             - "year" (str): The release year.
             - "season" (Optional[str]): The season number (None for movies).
-            - "episode" (Optional[str]): The episode number (None for movies).
-            - "episode_number" (Optional[str]): The episode number (new format).
+            - "episode" (Optional[str]): The episode number or range (e.g., "01" or "04-06") (None for movies).
+            - "episode_number" (Optional[str]): The absolute episode number or range (e.g., "030" or "030-032").
             - "resolution" (str): The video resolution (e.g., "1080p").
             - "platform" (str): The streaming platform or source (e.g., "Netflix").
             - "id_type" (str): The ID type, either "tmdbid" or "tvdbid".
@@ -131,17 +133,37 @@ def get_file_info(file_path: str) -> Optional[Dict[str, Optional[str]]]:
             # Detect platform using helper
             platform = _detect_platform(quality_info)
 
+            # Handle both single and multi-episode formats
+            episode_start = match.group(4)
+            episode_end = match.group(5)  # None for single episodes
+            absolute_start = match.group(6)
+            absolute_end = match.group(7)  # None for single episodes
+            
+            # For episode field, use range format if it's multi-episode
+            if episode_end:
+                episode_display = f"{episode_start}-{episode_end}"
+            else:
+                episode_display = episode_start
+                
+            # For absolute episode number, use range format if available
+            if absolute_start and absolute_end:
+                absolute_display = f"{absolute_start}-{absolute_end}"
+            elif absolute_start:
+                absolute_display = absolute_start
+            else:
+                absolute_display = None
+
             return {
                 "title": match.group(1),
                 "year": match.group(2),
                 "season": match.group(3),
-                "episode": match.group(4),
-                "episode_number": match.group(5),
+                "episode": episode_display,
+                "episode_number": absolute_display,
                 "resolution": resolution,
                 "platform": platform,
                 "id_type": "tvdbid",
                 "id": tvdb_id,
-                "extension": match.group(6),
+                "extension": match.group(8),
                 "type": "series",
                 "quality_info": quality_info,
             }
