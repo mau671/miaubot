@@ -1,12 +1,40 @@
 # Miaubot
 
-Este proyecto (semi) automatiza el renombrado y la organización de archivos multimedia, genera reportes de subida y sube archivos a servicios de almacenamiento en la nube utilizando Rclone.
+Herramienta para organizar y reportar archivos multimedia. Procesa nombres de archivo, extrae metadatos, genera reportes y puede subir contenidos a la nube mediante Rclone.
+
+## Características
+
+- Detección y parseo de series y películas a partir del nombre de archivo
+- Soporte para episodios múltiples (por ejemplo: S02E02-E03 y 028-029)
+- Extracción de metadatos técnicos con MediaInfo
+- Generación de reportes y envío opcional a Telegram
+- Subida a almacenamiento en la nube usando Rclone
+- Integración opcional con FileBot
 
 ## Ejemplo de uso
 
 ```bash
 uv run main.py -i /ruta/a/Series --upload --rc-config ./rclone.conf --rc-args="--fast-list" --rc-remote myRemote --dry-run
 ```
+
+### Comando detallado
+
+```bash
+miaubot -i \
+"/storage/data/media/shows/Anime Ongoing/2025/summer/Captivated, by You (2025) (2025) [tvdbid-455605]/Season 01/Captivated, by You (2025) (2025) - S01E05 - 005 - [1080p CR WEB-DL] [8bit] [8.2 Mbps] [AVC] [AAC 2.0] [ja] [es-419, en] - Erai-raws.mkv" \
+--remote-base gdrive:Anime \
+--rc-config /home/example/.config/rclone/rclone.conf \
+--rc-upload-to gdrive:Anime \
+--rc-args="--drive-upload-cutoff=1000T --drive-chunk-size=256M"
+```
+
+Descripción breve de las opciones:
+
+- `-i`: ruta de entrada; procesa el archivo indicado en modo archivo único.
+- `--remote-base`: base remota para construir la ruta remota (alias:ruta en Rclone).
+- `--rc-config`: archivo de configuración de Rclone a utilizar.
+- `--rc-upload-to`: remoto de destino para la subida.
+- `--rc-args`: argumentos adicionales pasados a Rclone durante la subida.
 
 ---
 
@@ -18,6 +46,7 @@ Antes de ejecutar el proyecto, asegúrate de tener los siguientes requisitos ins
 - **Una clave válida de [TMDb API](https://www.themoviedb.org/settings/api)**: Necesaria para obtener los pósters de series y películas.
 
 ### Herramientas opcionales
+
 Las siguientes herramientas son opcionales, pero mejoran la funcionalidad del proyecto:
 
 - **[FileBot](https://www.filebot.net/)**: Útil para automatizar el renombrado y la organización de archivos multimedia en un formato estructurado.
@@ -25,60 +54,37 @@ Las siguientes herramientas son opcionales, pero mejoran la funcionalidad del pr
 
 ---
 
-## Requisitos de formato de archivo
+## Formato de salida (FileBot)
 
-Para que el script funcione correctamente, los nombres de los archivos de entrada deben seguir un formato específico. A continuación se muestran ejemplos de formatos de entrada y salida.
+La salida final (ruta y nombre de archivo) la determina el preset de FileBot. A continuación se describe el patrón de salida según los scripts incluidos en `scripts/filebot/`.
 
-### Ejemplos de entrada
-Asegúrate de que los nombres de archivo incluyan información básica como título, resolución, plataforma y (para series) datos de temporada/episodio:
+### Series (`tv-shows.local.groovy`)
 
-```plaintext
-attack.on.titan.s01e01.1080p.cr.mkv
-Attack.on.Titan.S01E02.1080p.dvd.mkv
-YOUR.NAME.2016.1080p.bd.mkv
-```
-
-### Estructura de salida
-El script organizará y renombrará los archivos en el siguiente formato:
+Estructura de carpetas y nombre de archivo:
 
 ```plaintext
-Attack on Titan (2013)/
-├── Season 01/
-│   ├── Attack on Titan (2013) - S01E01 - [1080p] [CR] [tmdbid=12345].mkv
-│   ├── Attack on Titan (2013) - S01E02 - [1080p] [DVD] [tmdbid=12345].mkv
-Your Name (2016) - [1080p] [BD] [tmdbid=12345].mkv
+/storage/data/media/shows/{categoría}/{año-o-temporada-opcional/}{Serie (Año)} [tvdbid-{tvdbid}]/Season {SS}/
+{Serie (Año)} - S{SS}E{EE[-E..]}{ - AAA[-BBB]} - [Resolución Origen]{ [HDR] } [Bits] [Mbps] [VideoCodec] [AudioCodec Canales] [Audios] [Subs]{ - Grupo}.ext
 ```
 
----
+Notas sobre los componentes relevantes del nombre:
 
-## Preset de FileBot
+- `E{EE[-E..]}`: maneja multi-episodio (por ejemplo, `E02-E03`).
+- `AAA[-BBB]`: números absolutos de episodio si están disponibles (por ejemplo, `028-029`).
+- `Resolución Origen`: combinación de `vf` y el origen detectado (p. ej., `1080p CR WEB-DL`).
+- `VideoCodec`: normalizado (x264 → AVC, x265 → HEVC).
+- `Audios` y `Subs`: idiomas detectados, separados por comas.
+- `Grupo`: grupo de release cuando puede inferirse del nombre original.
 
-Utiliza el siguiente preset en FileBot para asegurarte de que tus archivos sean renombrados correctamente:
+### Películas (`movies.local.groovy`)
 
-```groovy
-{
-  // Convierte el nombre de archivo original a mayúsculas y busca la plataforma
-  def platform = fn.toUpperCase().match(/(?:CR|AMZN|NF|ATVP|MAX|VIX|DSNP|AO|BD|DVD)/) ?: "PLATFORM";
+Estructura de carpetas y nombre de archivo:
 
-  // Construye el identificador con prioridad para TMDb ID, como alternativa usa TVDb ID
-  def idTag = any { '[tmdbid=' + tmdbid + ']' } { '[tvdbid=' + tvdbid + ']' } { '[id=' + id + ']' };
-
-  // Extrae la resolución o usa un valor predeterminado
-  def resolution = vf ?: "1080p";
-
-  if (episode != null) {
-    // Series: Organiza en temporadas y renombra
-    return "${ny}/Season ${episode.season.pad(2)}/${ny} - S${episode.season.pad(2)}E${episode.episode.pad(2)} - [${resolution}] [${platform}] ${idTag}";
-  } else if (movie != null) {
-    // Películas: Renombra en un formato estructurado
-    return "${ny} - [${resolution}] [${platform}] ${idTag}";
-  } else {
-    return fn; // Mantén el nombre de archivo original si no se reconoce
-  }
-}
+```plaintext
+/storage/data/media/movies/{New Releases|Movies}/
+{Título} ({Año}) [tmdbid-{id}]/{Título} ({Año}) [tmdbid-{id}] - [Resolución Origen]{ [HDR] } [Bits] [Mbps] [VideoCodec] [AudioCodec Canales] [Audios] [Subs]{ - Grupo}.ext
 ```
 
----
 
 ## Plataformas soportadas
 
@@ -111,17 +117,18 @@ Si deseas contribuir, puedes enviar problemas (issues) o solicitudes de incorpor
 
 Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](./LICENSE) para más detalles.
 
-## Build System
+## Sistema de build
 
-### Cross-Compilation
+### Compilación cruzada
 
 El sistema soporta builds para múltiples arquitecturas usando Docker Buildx con emulación QEMU:
 
-#### Arquitecturas Soportadas
+#### Arquitecturas soportadas
+
 - `linux-amd64` (x86_64) - Nativo
 - `linux-arm64` (aarch64) - Cross-compilation
 
-#### Comandos de Build
+#### Comandos de build
 
 ```bash
 # Build para la arquitectura actual (AMD64)
@@ -134,20 +141,3 @@ make build-linux-arm64
 # Build para todas las arquitecturas
 ./build.sh build
 ```
-
-#### Limitaciones de Cross-Compilation
-
-**Importante**: Debido a limitaciones de PyInstaller, los ejecutables generados actualmente mantienen la arquitectura del host (x86_64) incluso cuando se construyen para ARM64. Esto significa:
-
-- ✅ El build se ejecuta exitosamente usando emulación QEMU
-- ✅ El proceso de construcción funciona para todas las arquitecturas
-- ⚠️ El ejecutable resultante requiere arquitectura x86_64 para ejecutarse
-
-**Soluciones futuras:**
-1. Usar buildx nativo en hosts ARM64 para builds ARM64 reales
-2. Implementar builds nativos usando GitHub Actions con runners ARM64
-3. Considerar alternativas a PyInstaller que soporten mejor cross-compilation
-
-Para builds ARM64 reales, se recomienda ejecutar el build en hardware ARM64 nativo.
-
-### Build Requirements
